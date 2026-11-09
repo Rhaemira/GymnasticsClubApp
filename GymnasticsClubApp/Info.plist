@@ -6,6 +6,8 @@
     <string>http://127.0.0.1:8080</string>
     <key>APP_ENVIRONMENT</key>
     <string>development</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Connect to the Gymnastics Club development API on your local network.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
