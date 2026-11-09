@@ -183,6 +183,7 @@ struct AttendanceEditorView: View {
 
     }
 
+    @ViewBuilder
     private var saveButton: some View {
 
         Button {

@@ -206,6 +206,7 @@ struct AthleteFormView: View {
 
     }
 
+    @ViewBuilder
     private var saveButton: some View {
 
         Button {
