@@ -1,43 +1,25 @@
-//
-//  NetworkError.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/10/26.
-//
-
-
 import Foundation
 
 enum NetworkError: LocalizedError {
-
     case invalidURL
     case invalidResponse
-    case serverError(Int)
+    case serverError(Int, String?)
     case decodingError
     case encodingError
+    case keychainFailure(OSStatus)
+    case authenticationRequired
     case unknown
 
     var errorDescription: String? {
-
         switch self {
-
-        case .invalidURL:
-            return "Invalid URL."
-
-        case .invalidResponse:
-            return "Invalid server response."
-
-        case .serverError(let code):
-            return "Server returned status code \(code)."
-
-        case .decodingError:
-            return "Failed to decode server response."
-
-        case .encodingError:
-            return "Failed to encode request."
-
-        case .unknown:
-            return "An unknown error occurred."
+        case .invalidURL: return "The API URL is invalid."
+        case .invalidResponse: return "The server returned an invalid response."
+        case .serverError(let code, let message): return message ?? "The server returned HTTP \(code)."
+        case .decodingError: return "The server response could not be read."
+        case .encodingError: return "The request could not be encoded."
+        case .keychainFailure(let status): return "Secure token storage failed (\(status))."
+        case .authenticationRequired: return "Your session has expired. Please sign in again."
+        case .unknown: return "An unexpected network error occurred."
         }
     }
 }
