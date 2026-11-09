@@ -1,11 +1,10 @@
 import Foundation
+import Security
 
 enum NetworkError: LocalizedError {
-    case invalidURL
-    case invalidResponse
+    case invalidURL, invalidResponse
     case serverError(Int, String?)
-    case decodingError
-    case encodingError
+    case decodingError, encodingError
     case keychainFailure(OSStatus)
     case authenticationRequired
     case unknown
