@@ -1,132 +1,63 @@
-//
-//  CustomTabBar.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/18/26.
-//
-
-
 import SwiftUI
 
 struct CustomTabBar: View {
-
-    @Binding
-    var selectedTab: AppTab
-
-    @Namespace
-    private var animation
+    @Binding var selectedTab: AppTab
+    @Namespace private var selectionAnimation
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-
-        HStack(spacing: 0) {
-
+        HStack(spacing: 4) {
             ForEach(AppTab.allCases, id: \.self) { tab in
-
                 Button {
-
-                    withAnimation(.spring(response: 0.45,
-                                          dampingFraction: 0.8)) {
-
-                        selectedTab = tab
-
+                    let change = { selectedTab = tab }
+                    if reduceMotion {
+                        change()
+                    } else {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.78), change)
                     }
-
+                    UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 } label: {
-
-                    VStack(spacing: 6) {
-
+                    VStack(spacing: 5) {
                         ZStack {
-
                             if selectedTab == tab {
-
-                                Circle()
-
-                                    .fill(tab.color.opacity(0.18))
-
-                                    .frame(width: 52, height: 52)
-
-                                    .matchedGeometryEffect(
-                                        id: "bubble",
-                                        in: animation
-                                    )
-
+                                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                                    .fill(tab.color.opacity(0.15))
+                                    .matchedGeometryEffect(id: "selected-tab", in: selectionAnimation)
                             }
-
                             Image(systemName: tab.icon)
-
-                                .font(.title3)
-
-                                .foregroundStyle(
-                                    selectedTab == tab
-                                    ? tab.color
-                                    : .secondary
-                                )
-
-                                .scaleEffect(
-                                    selectedTab == tab
-                                    ? 1.18
-                                    : 1
-                                )
-
+                                .font(.system(size: 18, weight: .semibold))
+                                .symbolVariant(selectedTab == tab ? .fill : .none)
                         }
-
+                        .frame(height: 32)
                         Text(tab.title)
-
-                            .font(.caption2)
-
-                            .foregroundStyle(
-                                selectedTab == tab
-                                ? tab.color
-                                : .secondary
-                            )
-
+                            .font(.system(.caption2, design: .rounded, weight: selectedTab == tab ? .semibold : .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
-
+                    .foregroundStyle(selectedTab == tab ? tab.color : Color.secondary)
                     .frame(maxWidth: .infinity)
-
+                    .contentShape(Rectangle())
+                    .padding(.vertical, 7)
                 }
-
                 .buttonStyle(.plain)
-
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
             }
-
         }
-
-        .padding(.horizontal, 18)
-
-        .padding(.top, 10)
-
-        .padding(.bottom, 28)
-
-        .background(.ultraThinMaterial)
-
-        .clipShape(
-
-            RoundedRectangle(
-                cornerRadius: 30,
-                style: .continuous
-            )
-
-        )
-
-        .padding(.horizontal)
-
-        .padding(.bottom, 10)
-
-        .shadow(
-            color: .black.opacity(0.08),
-            radius: 20,
-            y: 10
-        )
-
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background {
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    Capsule().strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.10), radius: 18, x: 0, y: 7)
+        }
     }
-
 }
 
 #Preview {
-
-    CustomTabBar(
-        selectedTab: .constant(.dashboard)
-    )
-
+    CustomTabBar(selectedTab: .constant(.dashboard))
+        .padding()
 }
