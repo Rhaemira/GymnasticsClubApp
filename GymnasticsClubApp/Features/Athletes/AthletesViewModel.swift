@@ -37,7 +37,7 @@ final class AthletesViewModel: ObservableObject {
         } catch {
 
             errorMessage = error.localizedDescription
-
+            return false
         }
 
     }

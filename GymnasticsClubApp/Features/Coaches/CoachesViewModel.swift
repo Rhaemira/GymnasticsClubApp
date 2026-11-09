@@ -42,7 +42,7 @@ final class CoachesViewModel: ObservableObject {
         } catch {
 
             errorMessage = error.localizedDescription
-
+            return false
         }
 
     }
