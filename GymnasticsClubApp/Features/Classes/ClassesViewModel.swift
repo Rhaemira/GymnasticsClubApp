@@ -20,12 +20,12 @@ final class ClassesViewModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    func addClass(name: String, capacity: Int, coachID: UUID) async -> Bool {
+    func addClass(name: String, capacity: Int, coachID: UUID) async -> String? {
         do {
             try await APIClient.shared.post(.classes, body: CreateClassRequest(name: name, capacity: capacity, coachID: coachID))
             await loadClasses()
-            return true
-        } catch { errorMessage = error.localizedDescription; return false }
+            return nil
+        } catch { errorMessage = error.localizedDescription; return error.localizedDescription }
     }
 
     func updateClass(gymClass: GymClass, name: String, capacity: Int, coachID: UUID) async -> Bool {

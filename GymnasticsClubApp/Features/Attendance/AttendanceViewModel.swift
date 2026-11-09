@@ -23,12 +23,12 @@ final class AttendanceViewModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    func addAttendance(athleteID: UUID, classID: UUID, attendedOn: Date) async -> Bool {
+    func addAttendance(athleteID: UUID, classID: UUID, attendedOn: Date) async -> String? {
         do {
             try await APIClient.shared.post(.attendance, body: CreateAttendanceRequest(athleteID: athleteID, classID: classID, attendedOn: attendedOn))
             await loadData()
-            return true
-        } catch { errorMessage = error.localizedDescription; return false }
+            return nil
+        } catch { errorMessage = error.localizedDescription; return error.localizedDescription }
     }
 
     func updateAttendance(attendance: Attendance, athleteID: UUID, classID: UUID, attendedOn: Date) async -> Bool {

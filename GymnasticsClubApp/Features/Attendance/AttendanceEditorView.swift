@@ -196,15 +196,15 @@ struct AttendanceEditorView: View {
 
             else {
 
+                validationMessage = "Choose both an athlete and a class."
                 return
-
             }
 
             Task {
 
                 saving = true
 
-                let succeeded: Bool
+                let saveError: String?
                 if let attendance {
 
                     succeeded = await viewModel.updateAttendance(
@@ -236,8 +236,7 @@ struct AttendanceEditorView: View {
                 }
 
                 saving = false
-                if succeeded { dismiss() }
-                else { validationMessage = viewModel.errorMessage ?? "Could not save attendance." }
+                if let saveError { validationMessage = saveError } else { dismiss() }
             }
 
         } label: {
