@@ -17,7 +17,7 @@ struct ClassFormView: View {
 
     let coaches: [Coach]
 
-    let onSave: (String, Coach, Int) async -> Void
+    let onSave: (String, Coach, Int) async -> Bool
 
     @Environment(\.dismiss)
     private var dismiss
@@ -33,6 +33,9 @@ struct ClassFormView: View {
 
     @State
     private var saving = false
+
+    @State
+    private var validationMessage: String?
 
     var body: some View {
 
@@ -233,27 +236,26 @@ struct ClassFormView: View {
                 let coach = selectedCoach,
 
                 let cap = Int(capacity),
-
-                !name.isEmpty
+                cap > 0,
+                !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
             else {
-
+                validationMessage = "Enter a class name, select a coach, and use a positive capacity."
                 return
-
             }
 
             Task {
 
                 saving = true
 
-                await onSave(
+                let succeeded = await onSave(
                     name,
                     coach,
                     cap
                 )
 
-                dismiss()
-
+                saving = false
+                if succeeded { dismiss() }
             }
 
         } label: {
@@ -315,7 +317,7 @@ struct ClassFormView: View {
         }
 
         .disabled(saving)
-
+        if let validationMessage { Text(validationMessage).font(.footnote).foregroundStyle(.red) }
     }
 
 }

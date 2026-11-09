@@ -30,6 +30,9 @@ struct AttendanceEditorView: View {
     @State
     private var saving = false
 
+    @State
+    private var validationMessage: String?
+
     var body: some View {
 
         NavigationStack {
@@ -200,9 +203,10 @@ struct AttendanceEditorView: View {
 
                 saving = true
 
+                let succeeded: Bool
                 if let attendance {
 
-                    await viewModel.updateAttendance(
+                    succeeded = await viewModel.updateAttendance(
 
                         attendance: attendance,
 
@@ -218,7 +222,7 @@ struct AttendanceEditorView: View {
 
                 else {
 
-                    await viewModel.addAttendance(
+                    succeeded = await viewModel.addAttendance(
 
                         athleteID: athlete.id,
 
@@ -230,8 +234,9 @@ struct AttendanceEditorView: View {
 
                 }
 
-                dismiss()
-
+                saving = false
+                if succeeded { dismiss() }
+                else { validationMessage = viewModel.errorMessage ?? "Could not save attendance." }
             }
 
         } label: {
@@ -295,7 +300,7 @@ struct AttendanceEditorView: View {
         }
 
         .disabled(saving)
-
+        if let validationMessage { Text(validationMessage).font(.footnote).foregroundStyle(.red) }
     }
 
 }
