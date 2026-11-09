@@ -29,14 +29,14 @@ final class CoachesViewModel: ObservableObject {
         }
     }
 
-    func updateCoach(coach: Coach, fullName: String, specialty: String) async -> Bool {
+    func updateCoach(coach: Coach, fullName: String, specialty: String) async -> String? {
         do {
             try await APIClient.shared.put(.coaches, id: coach.id, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
             await loadCoaches()
-            return true
+            return nil
         } catch {
             errorMessage = error.localizedDescription
-            return false
+            return error.localizedDescription
         }
     }
 

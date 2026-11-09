@@ -207,7 +207,7 @@ struct AttendanceEditorView: View {
                 let saveError: String?
                 if let attendance {
 
-                    succeeded = await viewModel.updateAttendance(
+                    saveError = await viewModel.updateAttendance(
 
                         attendance: attendance,
 
@@ -223,7 +223,7 @@ struct AttendanceEditorView: View {
 
                 else {
 
-                    succeeded = await viewModel.addAttendance(
+                    saveError = await viewModel.addAttendance(
 
                         athleteID: athlete.id,
 
