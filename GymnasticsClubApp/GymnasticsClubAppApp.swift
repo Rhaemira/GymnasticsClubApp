@@ -11,7 +11,7 @@ import SwiftUI
 struct GymnasticsClubAppApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
     }
 }
