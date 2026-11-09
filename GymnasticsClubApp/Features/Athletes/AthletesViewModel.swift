@@ -18,14 +18,14 @@ final class AthletesViewModel: ObservableObject {
         }
     }
 
-    func addAthlete(fullName: String, age: Int, level: String) async -> Bool {
+    func addAthlete(fullName: String, age: Int, level: String) async -> String? {
         do {
             try await APIClient.shared.post(.athletes, body: CreateAthleteRequest(fullName: fullName, age: age, level: level))
             await loadAthletes()
-            return true
+            return nil
         } catch {
             errorMessage = error.localizedDescription
-            return false
+            return error.localizedDescription
         }
     }
 

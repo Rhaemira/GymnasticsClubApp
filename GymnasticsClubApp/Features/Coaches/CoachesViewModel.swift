@@ -18,14 +18,14 @@ final class CoachesViewModel: ObservableObject {
         }
     }
 
-    func addCoach(fullName: String, specialty: String) async -> Bool {
+    func addCoach(fullName: String, specialty: String) async -> String? {
         do {
             try await APIClient.shared.post(.coaches, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
             await loadCoaches()
-            return true
+            return nil
         } catch {
             errorMessage = error.localizedDescription
-            return false
+            return error.localizedDescription
         }
     }
 

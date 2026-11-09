@@ -15,7 +15,7 @@ struct CoachFormView: View {
 
     var coach: Coach?
 
-    let onSave: (String, String) async -> Bool
+    let onSave: (String, String) async -> String?
 
     @Environment(\.dismiss)
     private var dismiss
@@ -180,7 +180,7 @@ struct CoachFormView: View {
 
                 saving = true
 
-                let succeeded = await onSave(
+                let saveError = await onSave(
 
                     fullName,
 
@@ -189,7 +189,7 @@ struct CoachFormView: View {
                 )
 
                 saving = false
-                if succeeded { dismiss() }
+                if let saveError { validationMessage = saveError } else { dismiss() }
             }
 
         } label: {
