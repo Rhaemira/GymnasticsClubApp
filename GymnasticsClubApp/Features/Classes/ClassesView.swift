@@ -61,13 +61,15 @@ struct ClassesView: View {
                 .navigationBarTitleDisplayMode(.inline)
 
                 .toolbar {
-
-                    ToolbarItem(placement: .principal) {
-
-                        EmptyView()
-
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            EnrollmentManagementView()
+                        } label: {
+                            Label("Enrollments", systemImage: "person.2.badge.gearshape")
+                                .labelStyle(.iconOnly)
+                        }
+                        .accessibilityLabel("Manage enrollments")
                     }
-
                 }
 
             }
