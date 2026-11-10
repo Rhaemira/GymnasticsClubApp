@@ -12,8 +12,8 @@ import Combine
 final class DashboardViewModel: ObservableObject {
     private let client: any APIClientProtocol
 
-    init(client: any APIClientProtocol = APIClient.shared) {
-        self.client = client
+    init(client: (any APIClientProtocol)? = nil) {
+        self.client = client ?? APIClient.shared
     }
 
 

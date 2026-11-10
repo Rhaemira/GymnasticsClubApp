@@ -5,8 +5,8 @@ import Combine
 final class ClassesViewModel: ObservableObject {
     private let client: any APIClientProtocol
 
-    init(client: any APIClientProtocol = APIClient.shared) {
-        self.client = client
+    init(client: (any APIClientProtocol)? = nil) {
+        self.client = client ?? APIClient.shared
     }
 
     @Published private(set) var classes: [GymClass] = []

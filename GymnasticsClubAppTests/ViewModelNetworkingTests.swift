@@ -1,6 +1,7 @@
 import XCTest
 @testable import GymnasticsClubApp
 
+@MainActor
 private final class StubAPIClient: APIClientProtocol {
     enum StubError: LocalizedError {
         case requestRejected
