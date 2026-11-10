@@ -60,7 +60,7 @@ final class UndoToastCoordinator: ObservableObject {
         }
 
         commitTask = Task { [weak self] in
-            for remaining in stride(from: Int(duration) - 1, through: 0, by: -1) {
+            for remaining in stride(from: Int(self.duration) - 1, through: 0, by: -1) {
                 do {
                     try await Task.sleep(for: .seconds(1))
                 } catch {

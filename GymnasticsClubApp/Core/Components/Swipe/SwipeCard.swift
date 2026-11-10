@@ -33,6 +33,7 @@ struct SwipeCard<Content: View>: View {
 
     // Whether we've crossed the full-swipe threshold mid-drag
     @State private var didCrossFullSwipe = false
+    @State private var actionInProgress = false
 
     // Live finger translation while the gesture is active
     @GestureState private var dragTranslation: CGFloat = 0
