@@ -50,26 +50,14 @@ final class APIClient {
     ) async throws -> Response {
         var request = try makeRequest(path: path, method: method, authenticated: authenticated)
         if let body {
-            do { request.httpBody = try encoder.encode(body) }
-            catch { throw NetworkError.encodingError }
+            do {
+                request.httpBody = try encoder.encode(body)
+            } catch {
+                throw NetworkError.encodingError
+            }
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
-
-        let (data, response) = try await perform(request)
-        guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
-        guard (200..<300).contains(http.statusCode) else {
-            if http.statusCode == 401 && authenticated {
-                KeychainTokenStore.delete()
-                await MainActor.run { AuthSession.shared.sessionExpired() }
-            }
-            let serverMessage = try? decoder.decode(ServerErrorResponse.self, from: data).reason
-            throw NetworkError.serverError(http.statusCode, serverMessage)
-        }
-        if data.isEmpty, Response.self == EmptyResponse.self {
-            return EmptyResponse() as! Response
-        }
-        do { return try decoder.decode(Response.self, from: data) }
-        catch { throw NetworkError.decodingError }
+        return try await execute(request, authenticated: authenticated)
     }
 
     private func send<Response: Decodable>(
@@ -78,8 +66,19 @@ final class APIClient {
         authenticated: Bool
     ) async throws -> Response {
         let request = try makeRequest(path: path, method: method, authenticated: authenticated)
+        return try await execute(request, authenticated: authenticated)
+    }
+
+    /// One response path for requests with and without JSON bodies.
+    private func execute<Response: Decodable>(
+        _ request: URLRequest,
+        authenticated: Bool
+    ) async throws -> Response {
         let (data, response) = try await perform(request)
-        guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
+        guard let http = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+
         guard (200..<300).contains(http.statusCode) else {
             if http.statusCode == 401 && authenticated {
                 KeychainTokenStore.delete()
@@ -88,11 +87,16 @@ final class APIClient {
             let serverMessage = try? decoder.decode(ServerErrorResponse.self, from: data).reason
             throw NetworkError.serverError(http.statusCode, serverMessage)
         }
-        if data.isEmpty, Response.self == EmptyResponse.self {
-            return EmptyResponse() as! Response
+
+        if data.isEmpty, let emptyResponse = EmptyResponse() as? Response {
+            return emptyResponse
         }
-        do { return try decoder.decode(Response.self, from: data) }
-        catch { throw NetworkError.decodingError }
+
+        do {
+            return try decoder.decode(Response.self, from: data)
+        } catch {
+            throw NetworkError.decodingError
+        }
     }
 
     private func perform(_ request: URLRequest) async throws -> (Data, URLResponse) {

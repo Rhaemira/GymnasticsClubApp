@@ -48,6 +48,14 @@ struct EnrollmentManagementView: View {
     @State private var selectedClassID: UUID?
     @State private var isSubmitting = false
 
+    private var selectedClassIsFull: Bool {
+        guard let selectedClassID,
+              let gymClass = viewModel.classes.first(where: { $0.id == selectedClassID }) else {
+            return false
+        }
+        return viewModel.count(for: gymClass.id) >= gymClass.capacity
+    }
+
     var body: some View {
         Group {
             if viewModel.isLoading && viewModel.classes.isEmpty {
@@ -81,7 +89,12 @@ struct EnrollmentManagementView: View {
                         } label: {
                             if isSubmitting { ProgressView() } else { Label("Enroll athlete", systemImage: "plus.circle.fill") }
                         }
-                        .disabled(isSubmitting || selectedAthleteID == nil || selectedClassID == nil)
+                        .disabled(isSubmitting || selectedAthleteID == nil || selectedClassID == nil || selectedClassIsFull)
+                        if selectedClassIsFull {
+                            Text("This class is full. Choose another class or remove an existing enrollment.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     Section("Class capacity") {
@@ -113,11 +126,17 @@ struct EnrollmentManagementView: View {
                                     }
                                     Spacer()
                                     Button(role: .destructive) {
-                                        Task { await viewModel.remove(enrollment) }
+                                        guard !isSubmitting else { return }
+                                        Task {
+                                            isSubmitting = true
+                                            await viewModel.remove(enrollment)
+                                            isSubmitting = false
+                                        }
                                     } label: {
                                         Image(systemName: "minus.circle")
                                     }
                                     .accessibilityLabel("Remove enrollment")
+                                    .disabled(isSubmitting)
                                 }
                             }
                         }

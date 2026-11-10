@@ -34,6 +34,7 @@ struct SwipeCard<Content: View>: View {
     // Whether we've crossed the full-swipe threshold mid-drag
     @State private var didCrossFullSwipe = false
     @State private var actionInProgress = false
+    @State private var actionTask: Task<Void, Never>?
 
     // Live finger translation while the gesture is active
     @GestureState private var dragTranslation: CGFloat = 0
@@ -87,6 +88,8 @@ struct SwipeCard<Content: View>: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .onDisappear {
+            actionTask?.cancel()
+            actionTask = nil
             offset = 0
             actionInProgress = false
             if openCardID == id { openCardID = nil }
@@ -115,7 +118,7 @@ private extension SwipeCard {
         }
         .contentShape(Rectangle())
         .offset(x: currentOffset)
-        .highPriorityGesture(dragGesture)
+        .simultaneousGesture(dragGesture)
         .onChange(of: openCardID) { _, newValue in
             if newValue != id, offset != 0 {
                 withAnimation(.snappy(duration: 0.28)) { offset = 0 }
@@ -123,6 +126,8 @@ private extension SwipeCard {
         }
         .onChange(of: isTabActive) { _, active in
             guard !active else { return }
+            actionTask?.cancel()
+            actionTask = nil
             withAnimation(.snappy(duration: 0.24)) { offset = 0 }
             actionInProgress = false
             if openCardID == id { openCardID = nil }
@@ -138,12 +143,14 @@ private extension SwipeCard {
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 8)
             .updating($dragTranslation) { value, state, _ in
+                // Vertical movement belongs to the containing ScrollView.
+                guard abs(value.translation.width) > abs(value.translation.height) else {
+                    state = 0
+                    return
+                }
                 state = rubberBand(value.translation.width)
 
-                // Fire a "click" haptic the moment the finger crosses the
-                // full-swipe threshold — exactly once per stroke
-                let predicted = value.predictedEndTranslation.width
-                let crossed   = abs(predicted) > fullSwipeThreshold
+                let crossed = abs(value.predictedEndTranslation.width) > fullSwipeThreshold
                 if crossed && !didCrossFullSwipe {
                     DispatchQueue.main.async {
                         UIImpactFeedbackGenerator(style: .rigid)
@@ -156,6 +163,10 @@ private extension SwipeCard {
             }
             .onEnded { value in
                 didCrossFullSwipe = false
+                // Avoid stealing vertical scrolling and navigation taps.
+                guard abs(value.translation.width) > abs(value.translation.height) * 1.2 else {
+                    return
+                }
                 finishDrag(value)
             }
     }
@@ -168,9 +179,10 @@ private extension SwipeCard {
 
     var editButton: some View {
         Button {
+            guard !actionInProgress else { return }
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             snapClosed()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { onEdit() }
+            runDelayedAction(onEdit)
         } label: {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
@@ -200,9 +212,10 @@ private extension SwipeCard {
 
     var deleteButton: some View {
         Button {
+            guard !actionInProgress else { return }
             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
             snapClosed()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { onDelete() }
+            runDelayedAction(onDelete)
         } label: {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
@@ -238,40 +251,21 @@ private extension SwipeCard {
 private extension SwipeCard {
 
     func finishDrag(_ value: DragGesture.Value) {
+        guard !actionInProgress else { return }
         let drag      = value.translation.width
         let predicted = value.predictedEndTranslation.width
 
         // ── Full swipe right → commit Edit ──────────────────────────────
         if predicted > fullSwipeThreshold {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.75)) {
-                offset = 500
-            }
-            Task {
-                try? await Task.sleep(for: .milliseconds(220))
-                withAnimation(.spring(response: 0.30, dampingFraction: 0.85)) {
-                    offset     = 0
-                    openCardID = nil
-                }
-                onEdit()
-            }
+            runFullSwipe(direction: 1, action: onEdit)
             return
         }
 
         // ── Full swipe left → commit Delete ─────────────────────────────
         if predicted < -fullSwipeThreshold {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.75)) {
-                offset = -500
-            }
-            Task {
-                try? await Task.sleep(for: .milliseconds(220))
-                withAnimation(.spring(response: 0.30, dampingFraction: 0.85)) {
-                    offset     = 0
-                    openCardID = nil
-                }
-                onDelete()
-            }
+            runFullSwipe(direction: -1, action: onDelete)
             return
         }
 
@@ -287,6 +281,47 @@ private extension SwipeCard {
             } else {
                 snapClosed()
             }
+        }
+    }
+
+    func runDelayedAction(_ action: @escaping () -> Void) {
+        guard !actionInProgress else { return }
+        actionInProgress = true
+        actionTask?.cancel()
+        actionTask = Task {
+            do {
+                try await Task.sleep(for: .milliseconds(220))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            action()
+            actionInProgress = false
+            actionTask = nil
+        }
+    }
+
+    func runFullSwipe(direction: CGFloat, action: @escaping () -> Void) {
+        guard !actionInProgress else { return }
+        actionInProgress = true
+        actionTask?.cancel()
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.75)) {
+            offset = direction * 500
+        }
+        actionTask = Task {
+            do {
+                try await Task.sleep(for: .milliseconds(220))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.30, dampingFraction: 0.85)) {
+                offset = 0
+                openCardID = nil
+            }
+            action()
+            actionInProgress = false
+            actionTask = nil
         }
     }
 

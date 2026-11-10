@@ -21,7 +21,7 @@ SwiftUI client for the Gymnastics Club management API. The app requires an admin
 
 ## Xcode setup
 
-The application bundle identifier is `com.rhaemira.GymnasticsClubApp`.
+The project retains its existing development bundle identifier for upgrade compatibility. Before distribution, configure a registered reverse-DNS identifier owned by the publisher; changing it after release creates a separate app identity and does not update existing installations.
 
 1. Clone this repository and open `GymnasticsClubApp.xcodeproj`.
 2. Select the `GymnasticsClubApp` scheme.
