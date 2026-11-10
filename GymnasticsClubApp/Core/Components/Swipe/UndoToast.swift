@@ -59,8 +59,9 @@ final class UndoToastCoordinator: ObservableObject {
             progress = 0
         }
 
+        let countdownSeconds = Int(duration)
         commitTask = Task { [weak self] in
-            for remaining in stride(from: Int(self.duration) - 1, through: 0, by: -1) {
+            for remaining in stride(from: countdownSeconds - 1, through: 0, by: -1) {
                 do {
                     try await Task.sleep(for: .seconds(1))
                 } catch {
