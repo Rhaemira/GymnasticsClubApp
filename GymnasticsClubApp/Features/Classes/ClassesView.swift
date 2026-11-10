@@ -10,6 +10,8 @@ import SwiftUI
 
 struct ClassesView: View {
 
+    @Environment(\.isTabActive) private var isTabActive
+
     @StateObject
     private var viewModel = ClassesViewModel()
 
@@ -88,10 +90,9 @@ struct ClassesView: View {
 
         .undoToast(undoToast)
 
-        .task {
-
+        .task(id: isTabActive) {
+            guard isTabActive else { return }
             await viewModel.loadClasses()
-
         }
 
         .sheet(isPresented: $showingAddSheet) {

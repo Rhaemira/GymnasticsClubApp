@@ -17,7 +17,11 @@ final class ClassesViewModel: ObservableObject {
             async let coachRows = APIClient.shared.get(.coaches, as: [Coach].self)
             classes = try await classRows
             coaches = try await coachRows
-        } catch { errorMessage = error.localizedDescription }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func addClass(name: String, capacity: Int, coachID: UUID) async -> String? {

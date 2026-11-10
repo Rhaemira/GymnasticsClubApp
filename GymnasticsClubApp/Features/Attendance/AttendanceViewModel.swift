@@ -20,7 +20,11 @@ final class AttendanceViewModel: ObservableObject {
             attendance = try await records
             athletes = try await athleteRows
             classes = try await classRows
-        } catch { errorMessage = error.localizedDescription }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func addAttendance(athleteID: UUID, classID: UUID, attendedOn: Date) async -> String? {

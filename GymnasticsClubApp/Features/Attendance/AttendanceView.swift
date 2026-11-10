@@ -10,6 +10,8 @@ import SwiftUI
 
 struct AttendanceView: View {
 
+    @Environment(\.isTabActive) private var isTabActive
+
     @StateObject
     private var viewModel = AttendanceViewModel()
 
@@ -86,10 +88,9 @@ struct AttendanceView: View {
 
         .undoToast(undoToast)
 
-        .task {
-
+        .task(id: isTabActive) {
+            guard isTabActive else { return }
             await viewModel.loadData()
-
         }
 
         .sheet(isPresented: $showingAddSheet) {
