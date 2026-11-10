@@ -211,12 +211,13 @@ struct AthleteFormView: View {
 
         Button {
 
-            guard
-                let ageValue = Int(age),
-                (1...120).contains(ageValue),
-                !fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            else {
-                validationMessage = "Enter a name and a valid age between 1 and 120."
+            guard !saving else { return }
+            guard let ageValue = Int(age) else {
+                validationMessage = "Enter a valid age between 1 and 120."
+                return
+            }
+            if let message = GymnasticsFormValidation.athlete(fullName: fullName, age: ageValue) {
+                validationMessage = message
                 return
             }
 

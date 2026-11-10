@@ -188,17 +188,16 @@ struct AttendanceEditorView: View {
 
         Button {
 
-            guard
-
-                let athlete = selectedAthlete,
-
-                let gymClass = selectedClass
-
-            else {
-
-                validationMessage = "Choose both an athlete and a class."
+            guard !saving else { return }
+            if let message = GymnasticsFormValidation.attendance(
+                hasAthlete: selectedAthlete != nil,
+                hasClass: selectedClass != nil,
+                attendedOn: attendedOn
+            ) {
+                validationMessage = message
                 return
             }
+            guard let athlete = selectedAthlete, let gymClass = selectedClass else { return }
 
             Task {
 

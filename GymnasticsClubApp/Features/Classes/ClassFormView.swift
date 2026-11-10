@@ -232,16 +232,21 @@ struct ClassFormView: View {
 
         Button {
 
-            guard
-
-                let coach = selectedCoach,
-
-                let cap = Int(capacity),
-                cap > 0,
-                !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-
-            else {
-                validationMessage = "Enter a class name, select a coach, and use a positive capacity."
+            guard !saving else { return }
+            guard let coach = selectedCoach else {
+                validationMessage = "Choose a coach for this class."
+                return
+            }
+            guard let cap = Int(capacity) else {
+                validationMessage = "Enter a class capacity between 1 and 500."
+                return
+            }
+            if let message = GymnasticsFormValidation.gymClass(
+                name: name,
+                capacity: cap,
+                hasCoach: true
+            ) {
+                validationMessage = message
                 return
             }
 

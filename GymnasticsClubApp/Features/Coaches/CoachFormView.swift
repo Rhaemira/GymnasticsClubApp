@@ -166,13 +166,9 @@ struct CoachFormView: View {
 
         Button {
 
-            guard
-
-                !fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                !specialty.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-
-            else {
-                validationMessage = "Enter both a coach name and specialty."
+            guard !saving else { return }
+            if let message = GymnasticsFormValidation.coach(fullName: fullName, specialty: specialty) {
+                validationMessage = message
                 return
             }
 

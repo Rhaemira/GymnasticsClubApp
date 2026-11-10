@@ -86,3 +86,59 @@ final class APIContractTests: XCTestCase {
         XCTAssertNotNil(json["attendedOn"])
     }
 }
+
+
+extension APIContractTests {
+    func testAthleteValidationMatchesBackendNameAndAgeLimits() {
+        XCTAssertNil(GymnasticsFormValidation.athlete(fullName: "Taylor Gymnast", age: 1))
+        XCTAssertNil(GymnasticsFormValidation.athlete(fullName: "Taylor Gymnast", age: 120))
+        XCTAssertNotNil(GymnasticsFormValidation.athlete(fullName: "   ", age: 12))
+        XCTAssertNotNil(GymnasticsFormValidation.athlete(fullName: "A", age: 12))
+        XCTAssertNotNil(GymnasticsFormValidation.athlete(fullName: "Taylor Gymnast", age: 0))
+        XCTAssertNotNil(GymnasticsFormValidation.athlete(fullName: "Taylor Gymnast", age: 121))
+    }
+
+    func testCoachValidationRequiresBoundedNameAndSpecialty() {
+        XCTAssertNil(GymnasticsFormValidation.coach(fullName: "Coach Name", specialty: "Artistic Gymnastics"))
+        XCTAssertNotNil(GymnasticsFormValidation.coach(fullName: " ", specialty: "Artistic"))
+        XCTAssertNotNil(GymnasticsFormValidation.coach(fullName: "Coach Name", specialty: " "))
+        XCTAssertNotNil(GymnasticsFormValidation.coach(fullName: String(repeating: "x", count: 101), specialty: "Artistic"))
+    }
+
+    func testClassValidationEnforcesCapacityAndCoachSelection() {
+        XCTAssertNil(GymnasticsFormValidation.gymClass(name: "Floor", capacity: 1, hasCoach: true))
+        XCTAssertNil(GymnasticsFormValidation.gymClass(name: "Floor", capacity: 500, hasCoach: true))
+        XCTAssertNotNil(GymnasticsFormValidation.gymClass(name: " ", capacity: 10, hasCoach: true))
+        XCTAssertNotNil(GymnasticsFormValidation.gymClass(name: "Floor", capacity: 0, hasCoach: true))
+        XCTAssertNotNil(GymnasticsFormValidation.gymClass(name: "Floor", capacity: 501, hasCoach: true))
+        XCTAssertNotNil(GymnasticsFormValidation.gymClass(name: "Floor", capacity: 10, hasCoach: false))
+    }
+
+    func testAttendanceValidationRequiresSelectionsAndRejectsFarFutureDates() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertNil(GymnasticsFormValidation.attendance(
+            hasAthlete: true,
+            hasClass: true,
+            attendedOn: now.addingTimeInterval(300),
+            now: now
+        ))
+        XCTAssertNotNil(GymnasticsFormValidation.attendance(
+            hasAthlete: false,
+            hasClass: true,
+            attendedOn: now,
+            now: now
+        ))
+        XCTAssertNotNil(GymnasticsFormValidation.attendance(
+            hasAthlete: true,
+            hasClass: false,
+            attendedOn: now,
+            now: now
+        ))
+        XCTAssertNotNil(GymnasticsFormValidation.attendance(
+            hasAthlete: true,
+            hasClass: true,
+            attendedOn: now.addingTimeInterval(301),
+            now: now
+        ))
+    }
+}
