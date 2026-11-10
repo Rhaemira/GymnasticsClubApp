@@ -31,10 +31,10 @@ final class DashboardViewModel: ObservableObject {
             stats      = fetchedStats
             attendance = fetchedAttendance
 
+        } catch is CancellationError {
+            return
         } catch {
-
             errorMessage = error.localizedDescription
-
         }
 
     }

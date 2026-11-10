@@ -13,6 +13,8 @@ final class AthletesViewModel: ObservableObject {
         defer { isLoading = false }
         do {
             athletes = try await APIClient.shared.get(.athletes, as: [Athlete].self)
+        } catch is CancellationError {
+            return
         } catch {
             errorMessage = error.localizedDescription
         }

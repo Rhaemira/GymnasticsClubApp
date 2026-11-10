@@ -9,6 +9,8 @@ import SwiftUI
 
 struct CoachesView: View {
 
+    @Environment(\.isTabActive) private var isTabActive
+
     @StateObject
     private var viewModel = CoachesViewModel()
 
@@ -85,10 +87,9 @@ struct CoachesView: View {
 
         .undoToast(undoToast)
 
-        .task {
-
+        .task(id: isTabActive) {
+            guard isTabActive else { return }
             await viewModel.loadCoaches()
-
         }
 
         .sheet(isPresented: $showingAddSheet) {

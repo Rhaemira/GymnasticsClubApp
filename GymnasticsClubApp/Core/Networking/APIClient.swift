@@ -106,6 +106,8 @@ final class APIClient {
             throw CancellationError()
         } catch let error as URLError {
             switch error.code {
+            case .cancelled:
+                throw CancellationError()
             case .timedOut:
                 throw NetworkError.requestTimedOut
             case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .cannotFindHost:

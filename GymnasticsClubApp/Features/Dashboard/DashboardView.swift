@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DashboardView: View {
+    @Environment(\.isTabActive) private var isTabActive
     @StateObject private var viewModel = DashboardViewModel()
 
     var body: some View {
@@ -36,7 +37,10 @@ struct DashboardView: View {
                     }
                 }
             }
-            .task { await viewModel.loadDashboard() }
+            .task(id: isTabActive) {
+                guard isTabActive else { return }
+                await viewModel.loadDashboard()
+            }
         }
     }
 }
