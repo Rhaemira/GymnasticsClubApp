@@ -23,10 +23,14 @@ final class UndoToastCoordinator: ObservableObject {
         let action: () async -> Void
     }
 
-    private let duration: Double = 4.0
+    private let duration: Double
     private var queue: [PendingDeletion] = []
     private var active: PendingDeletion?
     private var commitTask: Task<Void, Never>?
+
+    init(duration: Double = 4.0) {
+        self.duration = max(duration, 0.1)
+    }
 
     /// Queues deletions instead of flushing the previous one. Every item gets
     /// its own complete undo window before its server operation is committed.
@@ -51,7 +55,9 @@ final class UndoToastCoordinator: ObservableObject {
         let pending = queue.removeFirst()
         active = pending
         label = pending.label
-        secondsLeft = Int(duration)
+        let countdownSteps = max(Int(ceil(duration)), 1)
+        let stepDuration = duration / Double(countdownSteps)
+        secondsLeft = countdownSteps
         progress = 1
         isVisible = true
 
@@ -59,11 +65,10 @@ final class UndoToastCoordinator: ObservableObject {
             progress = 0
         }
 
-        let countdownSeconds = Int(duration)
         commitTask = Task { [weak self] in
-            for remaining in stride(from: countdownSeconds - 1, through: 0, by: -1) {
+            for remaining in stride(from: countdownSteps - 1, through: 0, by: -1) {
                 do {
-                    try await Task.sleep(for: .seconds(1))
+                    try await Task.sleep(for: .seconds(stepDuration))
                 } catch {
                     return
                 }

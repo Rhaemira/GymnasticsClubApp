@@ -70,7 +70,7 @@ xcodebuild -project GymnasticsClubApp.xcodeproj \
 
 ## Testing
 
-The `GymnasticsClubAppTests` XCTest target verifies request JSON keys, enrollment payloads, ISO-8601 timestamps with and without fractional seconds, production URL policy, typed network errors and endpoint paths.
+The `GymnasticsClubAppTests` XCTest target verifies request JSON keys, enrollment payloads, ISO-8601 timestamps with and without fractional seconds, production URL policy, typed network errors, endpoint paths, and queued undo/deletion behavior.
 
 Run the tests on an installed iOS Simulator:
 
