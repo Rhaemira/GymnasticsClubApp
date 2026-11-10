@@ -21,6 +21,7 @@ struct AuthenticatedUser: Decodable {
 final class AuthSession: ObservableObject {
     static let shared = AuthSession()
     @Published private(set) var isAuthenticated = KeychainTokenStore.read() != nil
+    @Published private(set) var isRestoring = KeychainTokenStore.read() != nil
     @Published private(set) var user: AuthenticatedUser?
     @Published var errorMessage: String?
 
@@ -43,14 +44,32 @@ final class AuthSession: ObservableObject {
     }
 
     func restore() async {
-        guard isAuthenticated else { return }
+        guard isAuthenticated else {
+            isRestoring = false
+            return
+        }
+
+        isRestoring = true
+        defer { isRestoring = false }
+
         do {
             user = try await APIClient.shared.get(.currentUser, as: AuthenticatedUser.self)
+            errorMessage = nil
+        } catch let error as NetworkError where error.isAuthenticationFailure {
+            sessionExpired()
         } catch {
-            KeychainTokenStore.delete()
-            isAuthenticated = false
-            user = nil
+            // A timeout, offline device or 5xx response is not proof that the
+            // token is invalid. Preserve the Keychain credential for retry.
+            errorMessage = "The club server could not be reached. Your sign-in is saved; check the connection and retry."
         }
+    }
+
+    func retryRestore() async {
+        await restore()
+    }
+
+    func clearError() {
+        errorMessage = nil
     }
 
     func signOut() async {
@@ -58,6 +77,7 @@ final class AuthSession: ObservableObject {
         KeychainTokenStore.delete()
         isAuthenticated = false
         user = nil
+        errorMessage = nil
     }
 
     func sessionExpired() {

@@ -1,12 +1,26 @@
 import SwiftUI
 
+private struct TabIsActiveKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var isTabActive: Bool {
+        get { self[TabIsActiveKey.self] }
+        set { self[TabIsActiveKey.self] = newValue }
+    }
+}
+
 struct RootView: View {
     @StateObject private var session = AuthSession.shared
     @State private var selectedTab: AppTab = .dashboard
 
     var body: some View {
         Group {
-            if session.isAuthenticated {
+            if session.isRestoring {
+                ProgressView("Restoring your session…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if session.isAuthenticated {
                 TabShell(selectedTab: $selectedTab)
             } else {
                 LoginView(session: session)
@@ -14,6 +28,18 @@ struct RootView: View {
         }
         .task { await session.restore() }
         .animation(.easeInOut(duration: 0.22), value: session.isAuthenticated)
+        .alert(
+            "Connection problem",
+            isPresented: Binding(
+                get: { session.isAuthenticated && session.errorMessage != nil },
+                set: { if !$0 { session.clearError() } }
+            )
+        ) {
+            Button("Retry") { Task { await session.retryRestore() } }
+            Button("Dismiss", role: .cancel) { session.clearError() }
+        } message: {
+            Text(session.errorMessage ?? "The server could not verify your session.")
+        }
     }
 }
 
@@ -39,6 +65,7 @@ private struct TabShell: View {
 
     private func tab<Content: View>(_ content: Content, is tab: AppTab) -> some View {
         content
+            .environment(\.isTabActive, selectedTab == tab)
             .opacity(selectedTab == tab ? 1 : 0)
             .allowsHitTesting(selectedTab == tab)
             .accessibilityHidden(selectedTab != tab)

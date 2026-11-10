@@ -21,6 +21,8 @@ SwiftUI client for the Gymnastics Club management API. The app requires an admin
 
 ## Xcode setup
 
+The application bundle identifier is `com.rhaemira.GymnasticsClubApp`.
+
 1. Clone this repository and open `GymnasticsClubApp.xcodeproj`.
 2. Select the `GymnasticsClubApp` scheme.
 3. Run on an iOS Simulator. Debug configuration defaults to `http://127.0.0.1:8080`; start the backend locally first.
@@ -68,7 +70,20 @@ xcodebuild -project GymnasticsClubApp.xcodeproj \
 
 ## Testing
 
-The repository currently has no XCTest target. The GitHub Actions workflow performs a real iOS Simulator SDK build with code signing disabled. Networking, form validation and UI interaction tests should be added to an XCTest target before release certification.
+The `GymnasticsClubAppTests` XCTest target verifies request JSON keys, enrollment payloads, ISO-8601 timestamps with and without fractional seconds, production URL policy, typed network errors and endpoint paths.
+
+Run the tests on an installed iOS Simulator:
+
+```bash
+xcodebuild test \
+  -project GymnasticsClubApp.xcodeproj \
+  -scheme GymnasticsClubApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  CODE_SIGNING_ALLOWED=NO \
+  API_BASE_URL=https://api.example.invalid
+```
+
+GitHub Actions builds the app for the Simulator and runs the XCTest target. UI automation against a live backend remains a separate release-certification step.
 
 ## Screenshots
 

@@ -234,7 +234,7 @@ struct AthletesView: View {
 
                                         onDelete: {
 
-                                            undoToast.schedule(label: "\(athlete.fullName) deleted") {
+                                            undoToast.schedule(label: "Delete \(athlete.fullName)?") {
                                                 await viewModel.deleteAthlete(athlete)
                                             }
 
@@ -312,10 +312,16 @@ struct AthletesView: View {
             }
 
             .refreshable {
-
                 await viewModel.loadAthletes()
-
             }
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    guard openCardID != nil else { return }
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        openCardID = nil
+                    }
+                }
+            )
 
         }
 

@@ -14,6 +14,8 @@ struct SwipeCard<Content: View>: View {
     @Binding
     var openCardID: UUID?
 
+    @Environment(\.isTabActive) private var isTabActive
+
     var color: Color = .blue
 
     let onEdit: () -> Void
@@ -83,6 +85,11 @@ struct SwipeCard<Content: View>: View {
             movingCard
         }
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .onDisappear {
+            offset = 0
+            actionInProgress = false
+            if openCardID == id { openCardID = nil }
+        }
     }
 
 }
@@ -109,10 +116,15 @@ private extension SwipeCard {
         .offset(x: currentOffset)
         .highPriorityGesture(dragGesture)
         .onChange(of: openCardID) { _, newValue in
-            // Another card opened — snap this one shut
             if newValue != id, offset != 0 {
                 withAnimation(.snappy(duration: 0.28)) { offset = 0 }
             }
+        }
+        .onChange(of: isTabActive) { _, active in
+            guard !active else { return }
+            withAnimation(.snappy(duration: 0.24)) { offset = 0 }
+            actionInProgress = false
+            if openCardID == id { openCardID = nil }
         }
     }
 

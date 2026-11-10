@@ -14,23 +14,8 @@ final class APIClient {
         self.baseURL = configured
         self.session = session
 
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        self.encoder = encoder
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            let fractional = ISO8601DateFormatter()
-            fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            if let date = fractional.date(from: value) { return date }
-            let standard = ISO8601DateFormatter()
-            standard.formatOptions = [.withInternetDateTime]
-            if let date = standard.date(from: value) { return date }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid ISO-8601 timestamp: \(value)")
-        }
-        self.decoder = decoder
+        self.encoder = Self.makeJSONEncoder()
+        self.decoder = Self.makeJSONDecoder()
     }
 
     func login(_ body: LoginRequest) async throws -> LoginResponse {
@@ -70,7 +55,7 @@ final class APIClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await perform(request)
         guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
             if http.statusCode == 401 && authenticated {
@@ -93,7 +78,7 @@ final class APIClient {
         authenticated: Bool
     ) async throws -> Response {
         let request = try makeRequest(path: path, method: method, authenticated: authenticated)
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await perform(request)
         guard let http = response as? HTTPURLResponse else { throw NetworkError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
             if http.statusCode == 401 && authenticated {
@@ -110,12 +95,50 @@ final class APIClient {
         catch { throw NetworkError.decodingError }
     }
 
+    private func perform(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        do {
+            return try await session.data(for: request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError {
+            switch error.code {
+            case .timedOut:
+                throw NetworkError.requestTimedOut
+            case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .cannotFindHost:
+                throw NetworkError.offline
+            default:
+                throw NetworkError.transportFailure(error.localizedDescription)
+            }
+        } catch {
+            throw NetworkError.transportFailure(error.localizedDescription)
+        }
+    }
+
+    static func makeJSONEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+
+    static func makeJSONDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            let fractional = ISO8601DateFormatter()
+            fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = fractional.date(from: value) { return date }
+            let standard = ISO8601DateFormatter()
+            standard.formatOptions = [.withInternetDateTime]
+            if let date = standard.date(from: value) { return date }
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid ISO-8601 timestamp: \(value)")
+        }
+        return decoder
+    }
+
     private func makeRequest(path: String, method: HTTPMethod, authenticated: Bool) throws -> URLRequest {
         guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw NetworkError.invalidURL }
-        if Bundle.main.object(forInfoDictionaryKey: "APP_ENVIRONMENT") as? String == "production",
-           url.scheme?.lowercased() != "https" {
-            throw NetworkError.invalidURL
-        }
+        try APIURLPolicy.validate(url, environment: Bundle.main.object(forInfoDictionaryKey: "APP_ENVIRONMENT") as? String ?? "development")
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.timeoutInterval = 30
@@ -131,4 +154,18 @@ final class APIClient {
 private struct EmptyResponse: Decodable {}
 private struct ServerErrorResponse: Decodable {
     let reason: String?
+}
+
+
+enum APIURLPolicy {
+    static func validate(_ url: URL, environment: String) throws {
+        guard let scheme = url.scheme?.lowercased(),
+              ["http", "https"].contains(scheme),
+              let host = url.host, !host.isEmpty else {
+            throw NetworkError.invalidURL
+        }
+        if environment.lowercased() == "production" && scheme != "https" {
+            throw NetworkError.invalidURL
+        }
+    }
 }

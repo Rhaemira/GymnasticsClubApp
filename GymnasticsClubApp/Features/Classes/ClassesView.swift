@@ -252,7 +252,7 @@ struct ClassesView: View {
 
                                         onDelete: {
 
-                                            undoToast.schedule(label: "\(gymClass.name) deleted") {
+                                            undoToast.schedule(label: "Delete \(gymClass.name)?") {
 
                                                 await viewModel.deleteClass(gymClass)
 
@@ -323,10 +323,16 @@ struct ClassesView: View {
             }
 
             .refreshable {
-
                 await viewModel.loadClasses()
-
             }
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    guard openCardID != nil else { return }
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        openCardID = nil
+                    }
+                }
+            )
 
         }
 
