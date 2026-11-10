@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class AthletesViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
     @Published private(set) var athletes: [Athlete] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -12,7 +18,7 @@ final class AthletesViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            athletes = try await APIClient.shared.get(.athletes, as: [Athlete].self)
+            athletes = try await client.get(.athletes, as: [Athlete].self)
         } catch is CancellationError {
             return
         } catch {
@@ -22,7 +28,7 @@ final class AthletesViewModel: ObservableObject {
 
     func addAthlete(fullName: String, age: Int, level: String) async -> String? {
         do {
-            try await APIClient.shared.post(.athletes, body: CreateAthleteRequest(fullName: fullName, age: age, level: level))
+            try await client.post(.athletes, body: CreateAthleteRequest(fullName: fullName, age: age, level: level))
             await loadAthletes()
             return nil
         } catch {
@@ -33,7 +39,7 @@ final class AthletesViewModel: ObservableObject {
 
     func updateAthlete(athlete: Athlete, fullName: String, age: Int, level: String) async -> String? {
         do {
-            try await APIClient.shared.put(.athletes, id: athlete.id, body: CreateAthleteRequest(fullName: fullName, age: age, level: level))
+            try await client.put(.athletes, id: athlete.id, body: CreateAthleteRequest(fullName: fullName, age: age, level: level))
             await loadAthletes()
             return nil
         } catch {
@@ -44,7 +50,7 @@ final class AthletesViewModel: ObservableObject {
 
     func deleteAthlete(_ athlete: Athlete) async {
         do {
-            try await APIClient.shared.delete(.athletes, id: athlete.id)
+            try await client.delete(.athletes, id: athlete.id)
             await loadAthletes()
         } catch {
             errorMessage = error.localizedDescription

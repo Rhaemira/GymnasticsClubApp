@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class CoachesViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
     @Published private(set) var coaches: [Coach] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -12,7 +18,7 @@ final class CoachesViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            coaches = try await APIClient.shared.get(.coaches, as: [Coach].self)
+            coaches = try await client.get(.coaches, as: [Coach].self)
         } catch is CancellationError {
             return
         } catch {
@@ -22,7 +28,7 @@ final class CoachesViewModel: ObservableObject {
 
     func addCoach(fullName: String, specialty: String) async -> String? {
         do {
-            try await APIClient.shared.post(.coaches, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
+            try await client.post(.coaches, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
             await loadCoaches()
             return nil
         } catch {
@@ -33,7 +39,7 @@ final class CoachesViewModel: ObservableObject {
 
     func updateCoach(coach: Coach, fullName: String, specialty: String) async -> String? {
         do {
-            try await APIClient.shared.put(.coaches, id: coach.id, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
+            try await client.put(.coaches, id: coach.id, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
             await loadCoaches()
             return nil
         } catch {
@@ -44,7 +50,7 @@ final class CoachesViewModel: ObservableObject {
 
     func deleteCoach(_ coach: Coach) async {
         do {
-            try await APIClient.shared.delete(.coaches, id: coach.id)
+            try await client.delete(.coaches, id: coach.id)
             await loadCoaches()
         } catch {
             errorMessage = error.localizedDescription

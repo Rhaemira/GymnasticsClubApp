@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class EnrollmentManagementViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
     @Published private(set) var enrollments: [Enrollment] = []
     @Published private(set) var athletes: [Athlete] = []
     @Published private(set) var classes: [GymClass] = []
@@ -14,9 +20,9 @@ final class EnrollmentManagementViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let e = APIClient.shared.get(.enrollments, as: [Enrollment].self)
-            async let a = APIClient.shared.get(.athletes, as: [Athlete].self)
-            async let c = APIClient.shared.get(.classes, as: [GymClass].self)
+            async let e = client.get(.enrollments, as: [Enrollment].self)
+            async let a = client.get(.athletes, as: [Athlete].self)
+            async let c = client.get(.classes, as: [GymClass].self)
             enrollments = try await e
             athletes = try await a
             classes = try await c
@@ -25,14 +31,14 @@ final class EnrollmentManagementViewModel: ObservableObject {
 
     func enroll(athleteID: UUID, classID: UUID) async {
         do {
-            try await APIClient.shared.post(.enrollments, body: CreateEnrollmentRequest(athleteID: athleteID, classID: classID))
+            try await client.post(.enrollments, body: CreateEnrollmentRequest(athleteID: athleteID, classID: classID))
             await load()
         } catch { errorMessage = error.localizedDescription }
     }
 
     func remove(_ enrollment: Enrollment) async {
         do {
-            try await APIClient.shared.delete(.enrollments, id: enrollment.id)
+            try await client.delete(.enrollments, id: enrollment.id)
             await load()
         } catch { errorMessage = error.localizedDescription }
     }

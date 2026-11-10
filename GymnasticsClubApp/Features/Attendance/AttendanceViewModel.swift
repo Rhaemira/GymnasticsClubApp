@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class AttendanceViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
     @Published private(set) var attendance: [Attendance] = []
     @Published private(set) var athletes: [Athlete] = []
     @Published private(set) var classes: [GymClass] = []
@@ -14,9 +20,9 @@ final class AttendanceViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let records = APIClient.shared.get(.attendance, as: [Attendance].self)
-            async let athleteRows = APIClient.shared.get(.athletes, as: [Athlete].self)
-            async let classRows = APIClient.shared.get(.classes, as: [GymClass].self)
+            async let records = client.get(.attendance, as: [Attendance].self)
+            async let athleteRows = client.get(.athletes, as: [Athlete].self)
+            async let classRows = client.get(.classes, as: [GymClass].self)
             attendance = try await records
             athletes = try await athleteRows
             classes = try await classRows
@@ -29,7 +35,7 @@ final class AttendanceViewModel: ObservableObject {
 
     func addAttendance(athleteID: UUID, classID: UUID, attendedOn: Date) async -> String? {
         do {
-            try await APIClient.shared.post(.attendance, body: CreateAttendanceRequest(athleteID: athleteID, classID: classID, attendedOn: attendedOn))
+            try await client.post(.attendance, body: CreateAttendanceRequest(athleteID: athleteID, classID: classID, attendedOn: attendedOn))
             await loadData()
             return nil
         } catch { errorMessage = error.localizedDescription; return error.localizedDescription }
@@ -37,7 +43,7 @@ final class AttendanceViewModel: ObservableObject {
 
     func updateAttendance(attendance: Attendance, athleteID: UUID, classID: UUID, attendedOn: Date) async -> String? {
         do {
-            try await APIClient.shared.put(.attendance, id: attendance.id, body: CreateAttendanceRequest(athleteID: athleteID, classID: classID, attendedOn: attendedOn))
+            try await client.put(.attendance, id: attendance.id, body: CreateAttendanceRequest(athleteID: athleteID, classID: classID, attendedOn: attendedOn))
             await loadData()
             return nil
         } catch { errorMessage = error.localizedDescription; return error.localizedDescription }
@@ -45,7 +51,7 @@ final class AttendanceViewModel: ObservableObject {
 
     func deleteAttendance(_ attendance: Attendance) async {
         do {
-            try await APIClient.shared.delete(.attendance, id: attendance.id)
+            try await client.delete(.attendance, id: attendance.id)
             await loadData()
         } catch { errorMessage = error.localizedDescription }
     }

@@ -10,6 +10,12 @@ import Combine
 
 @MainActor
 final class DashboardViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
 
     @Published private(set) var stats: DashboardStats?
     @Published private(set) var attendance: [Attendance] = []
@@ -25,8 +31,8 @@ final class DashboardViewModel: ObservableObject {
 
         do {
 
-            let fetchedStats = try await APIClient.shared.get(.reports, as: DashboardStats.self)
-            let fetchedAttendance = try await APIClient.shared.get(.attendance, as: [Attendance].self)
+            let fetchedStats = try await client.get(.reports, as: DashboardStats.self)
+            let fetchedAttendance = try await client.get(.attendance, as: [Attendance].self)
 
             stats      = fetchedStats
             attendance = fetchedAttendance

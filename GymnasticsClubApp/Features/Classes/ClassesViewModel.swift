@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class ClassesViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
     @Published private(set) var classes: [GymClass] = []
     @Published private(set) var coaches: [Coach] = []
     @Published var isLoading = false
@@ -13,8 +19,8 @@ final class ClassesViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            async let classRows = APIClient.shared.get(.classes, as: [GymClass].self)
-            async let coachRows = APIClient.shared.get(.coaches, as: [Coach].self)
+            async let classRows = client.get(.classes, as: [GymClass].self)
+            async let coachRows = client.get(.coaches, as: [Coach].self)
             classes = try await classRows
             coaches = try await coachRows
         } catch is CancellationError {
@@ -26,7 +32,7 @@ final class ClassesViewModel: ObservableObject {
 
     func addClass(name: String, capacity: Int, coachID: UUID) async -> String? {
         do {
-            try await APIClient.shared.post(.classes, body: CreateClassRequest(name: name, capacity: capacity, coachID: coachID))
+            try await client.post(.classes, body: CreateClassRequest(name: name, capacity: capacity, coachID: coachID))
             await loadClasses()
             return nil
         } catch { errorMessage = error.localizedDescription; return error.localizedDescription }
@@ -34,7 +40,7 @@ final class ClassesViewModel: ObservableObject {
 
     func updateClass(gymClass: GymClass, name: String, capacity: Int, coachID: UUID) async -> String? {
         do {
-            try await APIClient.shared.put(.classes, id: gymClass.id, body: CreateClassRequest(name: name, capacity: capacity, coachID: coachID))
+            try await client.put(.classes, id: gymClass.id, body: CreateClassRequest(name: name, capacity: capacity, coachID: coachID))
             await loadClasses()
             return nil
         } catch { errorMessage = error.localizedDescription; return error.localizedDescription }
@@ -42,7 +48,7 @@ final class ClassesViewModel: ObservableObject {
 
     func deleteClass(_ gymClass: GymClass) async {
         do {
-            try await APIClient.shared.delete(.classes, id: gymClass.id)
+            try await client.delete(.classes, id: gymClass.id)
             await loadClasses()
         } catch { errorMessage = error.localizedDescription }
     }

@@ -3,6 +3,12 @@ import Combine
 
 @MainActor
 final class AnalyticsViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = APIClient.shared) {
+        self.client = client
+    }
+
     @Published private(set) var analytics: AnalyticsResponse?
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -12,7 +18,7 @@ final class AnalyticsViewModel: ObservableObject {
         errorMessage = nil
         defer { isLoading = false }
         do {
-            analytics = try await APIClient.shared.get(.analytics, as: AnalyticsResponse.self)
+            analytics = try await client.get(.analytics, as: AnalyticsResponse.self)
         } catch {
             errorMessage = error.localizedDescription
         }

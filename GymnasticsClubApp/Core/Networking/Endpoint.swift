@@ -1,6 +1,6 @@
 import Foundation
 
-enum Endpoint {
+enum Endpoint: Hashable {
     case athletes, coaches, classes, attendance, reports, analytics, enrollments, currentUser
     var path: String {
         switch self {
