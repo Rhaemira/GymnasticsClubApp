@@ -1,331 +1,136 @@
-//
-//  CoachesView.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/13/26.
-//
-
 import SwiftUI
 
 struct CoachesView: View {
-
     @Environment(\.isTabActive) private var isTabActive
-
-    @StateObject
-    private var viewModel = CoachesViewModel()
-
-    @State
-    private var searchText = ""
-
-    @State
-    private var showingAddSheet = false
-
-    @State
-    private var selectedCoach: Coach?
-
-    @State
-    private var openCardID: UUID?
-
-    @StateObject
-    private var undoToast = UndoToastCoordinator()
+    @StateObject private var viewModel = CoachesViewModel()
+    @StateObject private var undoToast = UndoToastCoordinator()
+    @State private var searchText = ""
+    @State private var showingAddSheet = false
+    @State private var selectedCoach: Coach?
 
     private var filteredCoaches: [Coach] {
-
         viewModel.coaches.filter {
-
             searchText.isEmpty ||
-
             $0.fullName.localizedCaseInsensitiveContains(searchText) ||
-
             $0.specialty.localizedCaseInsensitiveContains(searchText)
-
         }
-
     }
 
     var body: some View {
-
         ZStack(alignment: .bottomTrailing) {
-
             NavigationStack {
-
-                ZStack {
-
-                    AppBackground(
-                        color: FeatureColors.coaches
-                    )
-
-                    content
-
-                }
-
-                .navigationBarTitleDisplayMode(.inline)
-
-                .toolbar {
-
-                    ToolbarItem(placement: .principal) {
-
-                        EmptyView()
-
-                    }
-
-                }
-
+                content
+                    .navigationTitle("Coaches")
+                    .navigationBarTitleDisplayMode(.inline)
             }
 
-            AddButton(
-                color: FeatureColors.coaches
-            ) {
-
+            AddButton(color: FeatureColors.coaches) {
                 showingAddSheet = true
-
             }
-
             .padding(26)
-
         }
-
         .undoToast(undoToast)
-
         .task(id: isTabActive) {
             guard isTabActive else { return }
             await viewModel.loadCoaches()
         }
-
         .sheet(isPresented: $showingAddSheet) {
-
-            CoachFormView(
-
-                title: "New Coach",
-
-                buttonTitle: "Add"
-
-            ) { fullName, specialty in
-
-                await viewModel.addCoach(
-
-                    fullName: fullName,
-
-                    specialty: specialty
-
-                )
-
+            CoachFormView(title: "New Coach", buttonTitle: "Add") { name, specialty in
+                await viewModel.addCoach(fullName: name, specialty: specialty)
             }
-
         }
-
         .sheet(item: $selectedCoach) { coach in
-
-            CoachFormView(
-
-                title: "Edit Coach",
-
-                buttonTitle: "Save",
-
-                coach: coach
-
-            ) { fullName, specialty in
-
-                await viewModel.updateCoach(
-
-                    coach: coach,
-
-                    fullName: fullName,
-
-                    specialty: specialty
-
-                )
-
+            CoachFormView(title: "Edit Coach", buttonTitle: "Save", coach: coach) { name, specialty in
+                await viewModel.updateCoach(coach: coach, fullName: name, specialty: specialty)
             }
-
         }
-
     }
 
     @ViewBuilder
-
     private var content: some View {
-
         if viewModel.isLoading {
-
             LoadingView()
-
-        }
-
-        else if let error = viewModel.errorMessage {
-
+        } else if let error = viewModel.errorMessage {
             ErrorView(message: error) {
-
-                Task {
-
-                    await viewModel.loadCoaches()
-
-                }
-
+                Task { await viewModel.loadCoaches() }
             }
-
-        }
-
-        else {
-
-            ScrollView {
-
-                VStack(spacing: 24) {
-
-                    FeatureHeader(
-
-                        title: "Coaches",
-
-                        subtitle: "\(filteredCoaches.count) registered coaches",
-
-                        icon: "person.3.fill",
-
-                        color: FeatureColors.coaches
-
-                    )
-
-                    GlassSearchBar(
-
-                        text: $searchText,
-
-                        color: FeatureColors.coaches
-
-                    )
-
-                    if filteredCoaches.isEmpty {
-
-                        ContentUnavailableView(
-
-                            "No Coaches",
-
-                            systemImage: "person.2.fill",
-
-                            description: Text(
-
-                                "Add your first coach."
-
-                            )
-
+        } else {
+            List {
+                Section {
+                    VStack(spacing: 18) {
+                        FeatureHeader(
+                            title: "Coaches",
+                            subtitle: "\(filteredCoaches.count) registered coaches",
+                            icon: "person.3.fill",
+                            color: FeatureColors.coaches
                         )
-
-                        .padding(.top,80)
-
+                        GlassSearchBar(text: $searchText, color: FeatureColors.coaches)
                     }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+                }
 
-                    else {
-
-                        LazyVStack(spacing: 18) {
-
-                            ForEach(filteredCoaches) { coach in
-
-                                NavigationLink {
-
-                                    CoachDetailView(
-                                        coach: coach
-                                    )
-
-                                } label: {
-
-                                    SwipeCard(
-
-                                        id: coach.id,
-
-                                        openCardID: $openCardID,
-
-                                        color: FeatureColors.coaches,
-
-                                        onEdit: {
-
-                                            selectedCoach = coach
-
-                                        },
-
-                                        onDelete: {
-
-                                            undoToast.schedule(label: "Delete \(coach.fullName)?") {
-
-                                                await viewModel.deleteCoach(coach)
-
-                                            }
-
-                                        }
-
-                                    ) {
-
-                                        CoachRow(coach: coach)
-
-                                    }
-
-                                }
-
-                                .buttonStyle(.plain)
-
-                                .contextMenu {
-
-                                    Button {
-
-                                        selectedCoach = coach
-
-                                    } label: {
-
-                                        Label(
-                                            "Edit",
-                                            systemImage: "pencil"
-                                        )
-
-                                    }
-
-                                    Button(
-                                        role: .destructive
-                                    ) {
-
-                                        undoToast.schedule(label: "\(coach.fullName) deleted") {
-
-                                            await viewModel.deleteCoach(coach)
-
-                                        }
-
-                                    } label: {
-
-                                        Label(
-                                            "Delete",
-                                            systemImage: "trash"
-                                        )
-
-                                    }
-
-                                }
-
-                            }
-
+                if filteredCoaches.isEmpty {
+                    ContentUnavailableView(
+                        "No Coaches",
+                        systemImage: "person.2.fill",
+                        description: Text(searchText.isEmpty ? "Add your first coach." : "Try a different search.")
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } else {
+                    ForEach(filteredCoaches) { coach in
+                        NavigationLink {
+                            CoachDetailView(coach: coach)
+                        } label: {
+                            CoachRow(coach: coach)
                         }
-
-                        .padding(.horizontal)
-
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                selectedCoach = coach
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(FeatureColors.coaches)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                undoToast.schedule(label: "Delete \(coach.fullName)?") {
+                                    await viewModel.deleteCoach(coach)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .contextMenu {
+                            Button {
+                                selectedCoach = coach
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                undoToast.schedule(label: "Delete \(coach.fullName)?") {
+                                    await viewModel.deleteCoach(coach)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
-
                 }
-
-                .padding(.top)
-
-                .padding(.bottom,100)
-
             }
-
-            .refreshable {
-                await viewModel.loadCoaches()
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background {
+                AppBackground(color: FeatureColors.coaches)
             }
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    guard openCardID != nil else { return }
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                        openCardID = nil
-                    }
-                }
-            )
-
+            .refreshable { await viewModel.loadCoaches() }
         }
-
     }
-
 }
