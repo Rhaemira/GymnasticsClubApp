@@ -1,342 +1,147 @@
-//
-//  ClassesView.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/14/26.
-//
-
-
 import SwiftUI
 
 struct ClassesView: View {
-
     @Environment(\.isTabActive) private var isTabActive
-
-    @StateObject
-    private var viewModel = ClassesViewModel()
-
-    @State
-    private var searchText = ""
-
-    @State
-    private var showingAddSheet = false
-
-    @State
-    private var selectedClass: GymClass?
-
-    @State
-    private var openCardID: UUID?
-
-    @StateObject
-    private var undoToast = UndoToastCoordinator()
+    @StateObject private var viewModel = ClassesViewModel()
+    @StateObject private var undoToast = UndoToastCoordinator()
+    @State private var searchText = ""
+    @State private var showingAddSheet = false
+    @State private var selectedClass: GymClass?
 
     private var filteredClasses: [GymClass] {
-
         viewModel.classes.filter {
-
             searchText.isEmpty ||
-
             $0.name.localizedCaseInsensitiveContains(searchText) ||
-
             $0.coach.fullName.localizedCaseInsensitiveContains(searchText)
-
         }
-
     }
 
     var body: some View {
-
         ZStack(alignment: .bottomTrailing) {
-
             NavigationStack {
-
-                ZStack {
-
-                    AppBackground(
-                        color: FeatureColors.classes
-                    )
-
-                    content
-
-                }
-
-                .navigationBarTitleDisplayMode(.inline)
-
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        NavigationLink {
-                            EnrollmentManagementView()
-                        } label: {
-                            Label("Enrollments", systemImage: "person.2.badge.gearshape")
-                                .labelStyle(.iconOnly)
+                content
+                    .navigationTitle("Classes")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            NavigationLink {
+                                EnrollmentManagementView()
+                            } label: {
+                                Label("Enrollments", systemImage: "person.2.badge.gearshape")
+                                    .labelStyle(.iconOnly)
+                            }
+                            .accessibilityLabel("Manage enrollments")
                         }
-                        .accessibilityLabel("Manage enrollments")
                     }
-                }
-
             }
 
-            AddButton(
-                color: FeatureColors.classes
-            ) {
-
+            AddButton(color: FeatureColors.classes) {
                 showingAddSheet = true
-
             }
-
             .padding(26)
-
         }
-
         .undoToast(undoToast)
-
         .task(id: isTabActive) {
             guard isTabActive else { return }
             await viewModel.loadClasses()
         }
-
         .sheet(isPresented: $showingAddSheet) {
-
-            ClassFormView(
-
-                title: "New Class",
-
-                buttonTitle: "Add",
-
-                coaches: viewModel.coaches
-
-            ) { name, coach, capacity in
-
-                await viewModel.addClass(
-
-                    name: name,
-
-                    capacity: capacity,
-
-                    coachID: coach.id
-
-                )
-
+            ClassFormView(title: "New Class", buttonTitle: "Add", coaches: viewModel.coaches) { name, coach, capacity in
+                await viewModel.addClass(name: name, capacity: capacity, coachID: coach.id)
             }
-
         }
-
         .sheet(item: $selectedClass) { gymClass in
-
-            ClassFormView(
-
-                title: "Edit Class",
-
-                buttonTitle: "Save",
-
-                gymClass: gymClass,
-
-                coaches: viewModel.coaches
-
-            ) { name, coach, capacity in
-
-                await viewModel.updateClass(
-
-                    gymClass: gymClass,
-
-                    name: name,
-
-                    capacity: capacity,
-
-                    coachID: coach.id
-
-                )
-
+            ClassFormView(title: "Edit Class", buttonTitle: "Save", gymClass: gymClass, coaches: viewModel.coaches) { name, coach, capacity in
+                await viewModel.updateClass(gymClass: gymClass, name: name, capacity: capacity, coachID: coach.id)
             }
-
         }
-
     }
 
     @ViewBuilder
-
     private var content: some View {
-
         if viewModel.isLoading {
-
             LoadingView()
-
-        }
-
-        else if let error = viewModel.errorMessage {
-
+        } else if let error = viewModel.errorMessage {
             ErrorView(message: error) {
-
-                Task {
-
-                    await viewModel.loadClasses()
-
-                }
-
+                Task { await viewModel.loadClasses() }
             }
-
-        }
-
-        else {
-
-            ScrollView {
-
-                VStack(spacing: 24) {
-
-                    FeatureHeader(
-
-                        title: "Classes",
-
-                        subtitle: "\(filteredClasses.count) active classes",
-
-                        icon: "figure.flexibility",
-
-                        color: FeatureColors.classes
-
-                    )
-
-                    GlassSearchBar(
-
-                        text: $searchText,
-
-                        color: FeatureColors.classes
-
-                    )
-
-                    if filteredClasses.isEmpty {
-
-                        ContentUnavailableView(
-
-                            "No Classes",
-
-                            systemImage: "figure.flexibility",
-
-                            description: Text(
-
-                                "Create your first class."
-
-                            )
-
+        } else {
+            List {
+                Section {
+                    VStack(spacing: 18) {
+                        FeatureHeader(
+                            title: "Classes",
+                            subtitle: "\(filteredClasses.count) active classes",
+                            icon: "figure.flexibility",
+                            color: FeatureColors.classes
                         )
-
-                        .padding(.top, 80)
-
+                        GlassSearchBar(text: $searchText, color: FeatureColors.classes)
                     }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+                }
 
-                    else {
-
-                        LazyVStack(spacing: 18) {
-
-                            ForEach(filteredClasses) { gymClass in
-
-                                NavigationLink {
-
-                                    ClassDetailView(
-                                        gymClass: gymClass
-                                    )
-
-                                } label: {
-
-                                    SwipeCard(
-
-                                        id: gymClass.id,
-
-                                        openCardID: $openCardID,
-
-                                        color: FeatureColors.classes,
-
-                                        onEdit: {
-
-                                            selectedClass = gymClass
-
-                                        },
-
-                                        onDelete: {
-
-                                            undoToast.schedule(label: "Delete \(gymClass.name)?") {
-
-                                                await viewModel.deleteClass(gymClass)
-
-                                            }
-
-                                        }
-
-                                    ) {
-
-                                        ClassRow(gymClass: gymClass)
-
-                                    }
-
-                                }
-
-                                .buttonStyle(.plain)
-
-                                .contextMenu {
-
-                                    Button {
-
-                                        selectedClass = gymClass
-
-                                    } label: {
-
-                                        Label(
-                                            "Edit",
-                                            systemImage: "pencil"
-                                        )
-
-                                    }
-
-                                    Button(
-                                        role: .destructive
-                                    ) {
-
-                                        undoToast.schedule(label: "\(gymClass.name) deleted") {
-
-                                            await viewModel.deleteClass(gymClass)
-
-                                        }
-
-                                    } label: {
-
-                                        Label(
-                                            "Delete",
-                                            systemImage: "trash"
-                                        )
-
-                                    }
-
-                                }
-
-                            }
-
+                if filteredClasses.isEmpty {
+                    ContentUnavailableView(
+                        "No Classes",
+                        systemImage: "figure.flexibility",
+                        description: Text(searchText.isEmpty ? "Create your first class." : "Try a different search.")
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } else {
+                    ForEach(filteredClasses) { gymClass in
+                        NavigationLink {
+                            ClassDetailView(gymClass: gymClass)
+                        } label: {
+                            ClassRow(gymClass: gymClass)
                         }
-
-                        .padding(.horizontal)
-
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                selectedClass = gymClass
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(FeatureColors.classes)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                undoToast.schedule(label: "Delete \(gymClass.name)?") {
+                                    await viewModel.deleteClass(gymClass)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .contextMenu {
+                            Button {
+                                selectedClass = gymClass
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                undoToast.schedule(label: "Delete \(gymClass.name)?") {
+                                    await viewModel.deleteClass(gymClass)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
-
                 }
-
-                .padding(.top)
-
-                .padding(.bottom, 100)
-
             }
-
-            .refreshable {
-                await viewModel.loadClasses()
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background {
+                AppBackground(color: FeatureColors.classes)
             }
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    guard openCardID != nil else { return }
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                        openCardID = nil
-                    }
-                }
-            )
-
+            .refreshable { await viewModel.loadClasses() }
         }
-
     }
-
 }
