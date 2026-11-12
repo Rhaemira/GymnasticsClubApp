@@ -41,6 +41,7 @@ final class AuthSession: ObservableObject {
     @Published private(set) var isRestoring: Bool
     @Published private(set) var user: AuthenticatedUser?
     @Published var errorMessage: String?
+    @Published var noticeMessage: String?
 
     /// Dependencies are injectable so session transitions can be tested without
     /// touching the device Keychain or making real network requests.
@@ -68,6 +69,7 @@ final class AuthSession: ObservableObject {
             isAuthenticated = true
             isRestoring = false
             errorMessage = nil
+            noticeMessage = nil
             return true
         } catch {
             errorMessage = error.localizedDescription
@@ -87,6 +89,7 @@ final class AuthSession: ObservableObject {
         do {
             user = try await client.get(.currentUser, as: AuthenticatedUser.self)
             errorMessage = nil
+            noticeMessage = nil
         } catch let error as NetworkError where error.isAuthenticationFailure {
             sessionExpired()
         } catch is CancellationError {
@@ -106,6 +109,10 @@ final class AuthSession: ObservableObject {
         errorMessage = nil
     }
 
+    func clearNotice() {
+        noticeMessage = nil
+    }
+
     func signOut() async {
         var remoteRevocationUnconfirmed = false
         do {
@@ -121,7 +128,8 @@ final class AuthSession: ObservableObject {
         isAuthenticated = false
         isRestoring = false
         user = nil
-        errorMessage = remoteRevocationUnconfirmed
+        errorMessage = nil
+        noticeMessage = remoteRevocationUnconfirmed
             ? "Signed out on this device. The server could not confirm token revocation; the token will expire automatically."
             : nil
     }
@@ -136,5 +144,6 @@ final class AuthSession: ObservableObject {
         isRestoring = false
         user = nil
         errorMessage = "Your session expired. Please sign in again."
+        noticeMessage = nil
     }
 }

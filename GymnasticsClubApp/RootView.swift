@@ -29,16 +29,28 @@ struct RootView: View {
         .task { await session.restore() }
         .animation(.easeInOut(duration: 0.22), value: session.isAuthenticated)
         .alert(
-            "Connection problem",
+            session.noticeMessage == nil ? "Connection problem" : "Sign-out notice",
             isPresented: Binding(
-                get: { session.isAuthenticated && session.errorMessage != nil },
-                set: { if !$0 { session.clearError() } }
+                get: {
+                    session.noticeMessage != nil ||
+                    (session.isAuthenticated && session.errorMessage != nil)
+                },
+                set: {
+                    if !$0 {
+                        session.clearError()
+                        session.clearNotice()
+                    }
+                }
             )
         ) {
-            Button("Retry") { Task { await session.retryRestore() } }
-            Button("Dismiss", role: .cancel) { session.clearError() }
+            if session.noticeMessage != nil {
+                Button("OK", role: .cancel) { session.clearNotice() }
+            } else {
+                Button("Retry") { Task { await session.retryRestore() } }
+                Button("Dismiss", role: .cancel) { session.clearError() }
+            }
         } message: {
-            Text(session.errorMessage ?? "The server could not verify your session.")
+            Text(session.noticeMessage ?? session.errorMessage ?? "The server could not verify your session.")
         }
     }
 }

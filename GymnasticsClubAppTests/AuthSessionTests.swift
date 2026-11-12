@@ -157,7 +157,8 @@ final class AuthSessionTests: XCTestCase {
         XCTAssertNil(store.token)
         XCTAssertNil(session.user)
         XCTAssertEqual(store.deleteCount, 1)
-        XCTAssertTrue(session.errorMessage?.contains("could not confirm token revocation") == true)
+        XCTAssertTrue(session.noticeMessage?.contains("could not confirm token revocation") == true)
+        XCTAssertNil(session.errorMessage)
     }
 
     func testUnauthorizedSignOutIsTreatedAsAlreadyRejectedCredential() async {
@@ -172,6 +173,7 @@ final class AuthSessionTests: XCTestCase {
         XCTAssertFalse(session.isAuthenticated)
         XCTAssertNil(store.token)
         XCTAssertNil(session.errorMessage)
+        XCTAssertNil(session.noticeMessage)
     }
 
     func testLateUnauthorizedResponseCannotClearAReplacementCredential() {
