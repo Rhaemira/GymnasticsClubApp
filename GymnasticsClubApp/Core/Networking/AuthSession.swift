@@ -17,6 +17,12 @@ struct AuthenticatedUser: Decodable {
     let email: String
 }
 
+enum SessionTokenPolicy {
+    static func shouldExpire(requestToken: String, currentToken: String?) -> Bool {
+        currentToken == requestToken
+    }
+}
+
 @MainActor
 final class AuthSession: ObservableObject {
     static let shared = AuthSession()
@@ -81,7 +87,7 @@ final class AuthSession: ObservableObject {
     }
 
     func sessionExpired(ifCurrentTokenMatches requestToken: String? = nil) {
-        if let requestToken, KeychainTokenStore.read() != requestToken {
+        if let requestToken, !SessionTokenPolicy.shouldExpire(requestToken: requestToken, currentToken: KeychainTokenStore.read()) {
             return
         }
         KeychainTokenStore.delete()
