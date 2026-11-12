@@ -80,9 +80,14 @@ final class APIClient: APIClientProtocol {
         }
 
         guard (200..<300).contains(http.statusCode) else {
-            if http.statusCode == 401 && authenticated {
-                KeychainTokenStore.delete()
-                await MainActor.run { AuthSession.shared.sessionExpired() }
+            if http.statusCode == 401,
+               authenticated,
+               let authorization = request.value(forHTTPHeaderField: "Authorization"),
+               authorization.hasPrefix("Bearer ") {
+                let requestToken = String(authorization.dropFirst("Bearer ".count))
+                // A late 401 from an old request must not invalidate a newer
+                // session established after that request was sent.
+                await AuthSession.shared.sessionExpired(ifCurrentTokenMatches: requestToken)
             }
             let serverMessage = try? decoder.decode(ServerErrorResponse.self, from: data).reason
             throw NetworkError.serverError(http.statusCode, serverMessage)
