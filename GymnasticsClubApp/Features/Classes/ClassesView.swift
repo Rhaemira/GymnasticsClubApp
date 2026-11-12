@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct ClassesView: View {
+    init(undoToast: UndoToastCoordinator = UndoToastCoordinator()) {
+        self.undoToast = undoToast
+    }
+
     @Environment(\.isTabActive) private var isTabActive
     @StateObject private var viewModel = ClassesViewModel()
-    @StateObject private var undoToast = UndoToastCoordinator()
+    let undoToast: UndoToastCoordinator
     @State private var searchText = ""
     @State private var showingAddSheet = false
     @State private var selectedClass: GymClass?
@@ -42,7 +46,6 @@ struct ClassesView: View {
             }
             .padding(26)
         }
-        .undoToast(undoToast)
         .task(id: isTabActive) {
             guard isTabActive else { return }
             await viewModel.loadClasses()

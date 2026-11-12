@@ -51,6 +51,19 @@ final class UndoToastCoordinator: ObservableObject {
         presentNext()
     }
 
+    /// Cancels pending deletions when the authenticated workspace is left.
+    /// A deletion already being sent to the server cannot be rolled back here.
+    func cancelAll() {
+        queue.removeAll()
+        guard !isCommitting else { return }
+        commitTask?.cancel()
+        commitTask = nil
+        active = nil
+        progress = 1
+        secondsLeft = max(Int(ceil(duration)), 1)
+        dismiss()
+    }
+
     private func presentNext() {
         guard active == nil, !isCommitting, !queue.isEmpty else { return }
         let pending = queue.removeFirst()

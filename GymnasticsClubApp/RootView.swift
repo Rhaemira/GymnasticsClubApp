@@ -14,6 +14,7 @@ extension EnvironmentValues {
 struct RootView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var session = AuthSession.shared
+    @StateObject private var undoToast = UndoToastCoordinator()
     @State private var selectedTab: AppTab = .dashboard
 
     var body: some View {
@@ -22,13 +23,19 @@ struct RootView: View {
                 ProgressView("Restoring your session…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if session.isAuthenticated {
-                TabShell(selectedTab: $selectedTab)
+                TabShell(selectedTab: $selectedTab, undoToast: undoToast)
             } else {
                 LoginView(session: session)
             }
         }
         .task { await session.restore() }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: session.isAuthenticated)
+        .onChange(of: session.isAuthenticated) { _, isAuthenticated in
+            if !isAuthenticated {
+                undoToast.cancelAll()
+            }
+        }
+        .undoToast(undoToast)
         .alert(
             session.noticeMessage == nil ? "Connection problem" : "Sign-out notice",
             isPresented: Binding(
@@ -61,6 +68,7 @@ struct RootView: View {
 /// NavigationStack and is loaded only while selected.
 private struct TabShell: View {
     @Binding var selectedTab: AppTab
+    let undoToast: UndoToastCoordinator
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -69,22 +77,22 @@ private struct TabShell: View {
                 .tabItem { Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon) }
                 .tag(AppTab.dashboard)
 
-            AthletesView()
+            AthletesView(undoToast: undoToast)
                 .environment(\.isTabActive, selectedTab == .athletes)
                 .tabItem { Label(AppTab.athletes.title, systemImage: AppTab.athletes.icon) }
                 .tag(AppTab.athletes)
 
-            CoachesView()
+            CoachesView(undoToast: undoToast)
                 .environment(\.isTabActive, selectedTab == .coaches)
                 .tabItem { Label(AppTab.coaches.title, systemImage: AppTab.coaches.icon) }
                 .tag(AppTab.coaches)
 
-            ClassesView()
+            ClassesView(undoToast: undoToast)
                 .environment(\.isTabActive, selectedTab == .classes)
                 .tabItem { Label(AppTab.classes.title, systemImage: AppTab.classes.icon) }
                 .tag(AppTab.classes)
 
-            AttendanceView()
+            AttendanceView(undoToast: undoToast)
                 .environment(\.isTabActive, selectedTab == .attendance)
                 .tabItem { Label(AppTab.attendance.title, systemImage: AppTab.attendance.icon) }
                 .tag(AppTab.attendance)

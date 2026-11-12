@@ -3,6 +3,24 @@ import XCTest
 
 @MainActor
 final class UndoToastCoordinatorTests: XCTestCase {
+    func testCancelAllCancelsActiveAndQueuedDeletions() async throws {
+        let coordinator = UndoToastCoordinator(duration: 0.2)
+        var committed: [String] = []
+
+        coordinator.schedule(label: "Delete first") {
+            committed.append("first")
+        }
+        coordinator.schedule(label: "Delete second") {
+            committed.append("second")
+        }
+
+        coordinator.cancelAll()
+
+        XCTAssertFalse(coordinator.isVisible)
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertTrue(committed.isEmpty)
+    }
+
     func testSchedulingAnotherDeletionDoesNotCommitTheFirstEarly() async throws {
         let coordinator = UndoToastCoordinator(duration: 0.6)
         var committed: [String] = []
