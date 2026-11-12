@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		E6FE9F2E2FE02F4500F221D1 /* GymnasticsClubApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GymnasticsClubApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000001 /* GymnasticsClubAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GymnasticsClubAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,9 +30,21 @@
 			path = GymnasticsClubApp;
 			sourceTree = "<group>";
 		};
+		B10000000000000000000002 /* GymnasticsClubAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GymnasticsClubAppTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		B10000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E6FE9F2B2FE02F4500F221D1 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				E6FE9F302FE02F4500F221D1 /* GymnasticsClubApp */,
+				B10000000000000000000002 /* GymnasticsClubAppTests */,
 				E6FE9F2F2FE02F4500F221D1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				E6FE9F2E2FE02F4500F221D1 /* GymnasticsClubApp.app */,
+				B10000000000000000000001 /* GymnasticsClubAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -83,7 +98,48 @@
 			productReference = E6FE9F2E2FE02F4500F221D1 /* GymnasticsClubApp.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B10000000000000000000003 /* GymnasticsClubAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B10000000000000000000009 /* Build configuration list for PBXNativeTarget "GymnasticsClubAppTests" */;
+			buildPhases = (
+				B10000000000000000000004 /* Sources */,
+				B10000000000000000000005 /* Frameworks */,
+				B10000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B10000000000000000000007 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B10000000000000000000002 /* GymnasticsClubAppTests */,
+			);
+			name = GymnasticsClubAppTests;
+			packageProductDependencies = (
+			);
+			productName = GymnasticsClubAppTests;
+			productReference = B10000000000000000000001 /* GymnasticsClubAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		B10000000000000000000008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E6FE9F262FE02F4500F221D1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E6FE9F2D2FE02F4500F221D1;
+			remoteInfo = GymnasticsClubApp;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		B10000000000000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E6FE9F2D2FE02F4500F221D1 /* GymnasticsClubApp */;
+			targetProxy = B10000000000000000000008 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		E6FE9F262FE02F4500F221D1 /* Project object */ = {
@@ -94,6 +150,9 @@
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					E6FE9F2D2FE02F4500F221D1 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					B10000000000000000000003 = {
 						CreatedOnToolsVersion = 26.5;
 					};
 				};
@@ -113,11 +172,19 @@
 			projectRoot = "";
 			targets = (
 				E6FE9F2D2FE02F4500F221D1 /* GymnasticsClubApp */,
+				B10000000000000000000003 /* GymnasticsClubAppTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B10000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E6FE9F2C2FE02F4500F221D1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +195,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		B10000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E6FE9F2A2FE02F4500F221D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -138,6 +212,44 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		B1000000000000000000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Loki.Test.GymnasticsClubAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GymnasticsClubApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GymnasticsClubApp";
+				TEST_TARGET_NAME = GymnasticsClubApp;
+			};
+			name = Debug;
+		};
+		B1000000000000000000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = com.Loki.Test.GymnasticsClubAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GymnasticsClubApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GymnasticsClubApp";
+				TEST_TARGET_NAME = GymnasticsClubApp;
+			};
+			name = Release;
+		};
 		E6FE9F372FE02F4600F221D1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -270,6 +382,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				API_BASE_URL = "http://127.0.0.1:8080";
+				INFOPLIST_KEY_API_BASE_URL = "$(API_BASE_URL)";
+				INFOPLIST_KEY_APP_ENVIRONMENT = development;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -302,6 +417,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_API_BASE_URL = "$(API_BASE_URL)";
+				API_BASE_URL = "https://api.example.invalid";
+				INFOPLIST_KEY_APP_ENVIRONMENT = production;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -324,6 +442,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		B10000000000000000000009 /* Build configuration list for PBXNativeTarget "GymnasticsClubAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1000000000000000000000A /* Debug */,
+				B1000000000000000000000B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E6FE9F292FE02F4500F221D1 /* Build configuration list for PBXProject "GymnasticsClubApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

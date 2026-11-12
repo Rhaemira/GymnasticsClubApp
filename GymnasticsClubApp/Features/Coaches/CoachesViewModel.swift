@@ -1,125 +1,77 @@
-//
-//  CoachesViewModel.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/13/26.
-//
-
-
 import Foundation
 import Combine
 
 @MainActor
 final class CoachesViewModel: ObservableObject {
+    private let client: any APIClientProtocol
+    private var loadGeneration = 0
 
-    @Published
-    private(set) var coaches: [Coach] = []
-
-    @Published
-    var isLoading = false
-
-    @Published
-    var errorMessage: String?
-
-    func loadCoaches() async {
-
-        isLoading = true
-        errorMessage = nil
-
-        defer {
-
-            isLoading = false
-
-        }
-
-        do {
-
-            coaches = try await APIClient.shared.get(
-                .coaches,
-                as: [Coach].self
-            )
-
-        } catch {
-
-            errorMessage = error.localizedDescription
-
-        }
-
+    init(client: (any APIClientProtocol)? = nil) {
+        self.client = client ?? APIClient.shared
     }
 
-    func addCoach(
-        fullName: String,
-        specialty: String
-    ) async {
+    @Published private(set) var coaches: [Coach] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
 
-        let request = CreateCoachRequest(
-            fullName: fullName,
-            specialty: specialty
-        )
-
-        do {
-
-            try await APIClient.shared.post(
-                .coaches,
-                body: request
-            )
-
-            await loadCoaches()
-
-        } catch {
-
-            errorMessage = error.localizedDescription
-
+    func loadCoaches() async {
+        loadGeneration += 1
+        let generation = loadGeneration
+        isLoading = true
+        errorMessage = nil
+        defer {
+            if generation == loadGeneration {
+                isLoading = false
+            }
         }
 
+        do {
+            let rows = try await client.get(.coaches, as: [Coach].self)
+            guard generation == loadGeneration else { return }
+            coaches = rows
+        } catch is CancellationError {
+            return
+        } catch {
+            guard generation == loadGeneration else { return }
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func addCoach(fullName: String, specialty: String) async -> String? {
+        do {
+            try await client.post(.coaches, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
+            await loadCoaches()
+            return nil
+        } catch {
+            errorMessage = error.localizedDescription
+            return error.localizedDescription
+        }
+    }
+
+    func updateCoach(coach: Coach, fullName: String, specialty: String) async -> String? {
+        do {
+            try await client.put(
+                .coaches,
+                id: coach.id,
+                body: CreateCoachRequest(fullName: fullName, specialty: specialty)
+            )
+            await loadCoaches()
+            return nil
+        } catch {
+            errorMessage = error.localizedDescription
+            return error.localizedDescription
+        }
     }
 
     func deleteCoach(_ coach: Coach) async {
-
         do {
-
-            try await APIClient.shared.delete(
-                .coaches,
-                id: coach.id
-            )
-
+            try await client.delete(.coaches, id: coach.id)
+            coaches.removeAll { $0.id == coach.id }
             await loadCoaches()
-
+        } catch is CancellationError {
+            return
         } catch {
-
             errorMessage = error.localizedDescription
-
         }
-
     }
-    
-    func updateCoach(
-        coach: Coach,
-        fullName: String,
-        specialty: String
-    ) async {
-
-        let request = CreateCoachRequest(
-            fullName: fullName,
-            specialty: specialty
-        )
-
-        do {
-
-            try await APIClient.shared.put(
-                .coaches,
-                id: coach.id,
-                body: request
-            )
-
-            await loadCoaches()
-
-        } catch {
-
-            errorMessage = error.localizedDescription
-
-        }
-
-    }
-
 }

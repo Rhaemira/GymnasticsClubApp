@@ -1,0 +1,21 @@
+# Xcode
+DerivedData/
+.build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.xcarchive
+*.dSYM.zip
+*.dSYM
+
+# SwiftPM
+.swiftpm/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+Secrets/

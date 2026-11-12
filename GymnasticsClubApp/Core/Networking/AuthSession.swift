@@ -1,0 +1,150 @@
+import Foundation
+import Combine
+
+struct LoginRequest: Encodable {
+    let email: String
+    let password: String
+}
+
+struct LoginResponse: Decodable {
+    let token: String
+    let expiresAt: Date
+    let user: AuthenticatedUser
+}
+
+struct AuthenticatedUser: Decodable {
+    let id: UUID
+    let email: String
+}
+
+enum SessionTokenPolicy {
+    static func shouldExpire(requestToken: String, currentToken: String?) -> Bool {
+        currentToken == requestToken
+    }
+}
+
+@MainActor
+final class AuthSession: ObservableObject {
+    static let shared = AuthSession(
+        client: APIClient.shared,
+        tokenReader: { KeychainTokenStore.read() },
+        tokenWriter: { try KeychainTokenStore.save($0) },
+        tokenDeleter: { KeychainTokenStore.delete() }
+    )
+
+    private let client: any APIClientProtocol
+    private let tokenReader: @MainActor () -> String?
+    private let tokenWriter: @MainActor (String) throws -> Void
+    private let tokenDeleter: @MainActor () -> Void
+
+    @Published private(set) var isAuthenticated: Bool
+    @Published private(set) var isRestoring: Bool
+    @Published private(set) var user: AuthenticatedUser?
+    @Published var errorMessage: String?
+    @Published var noticeMessage: String?
+
+    /// Dependencies are injectable so session transitions can be tested without
+    /// touching the device Keychain or making real network requests.
+    init(
+        client: any APIClientProtocol,
+        tokenReader: @escaping @MainActor () -> String?,
+        tokenWriter: @escaping @MainActor (String) throws -> Void,
+        tokenDeleter: @escaping @MainActor () -> Void
+    ) {
+        self.client = client
+        self.tokenReader = tokenReader
+        self.tokenWriter = tokenWriter
+        self.tokenDeleter = tokenDeleter
+
+        let hasStoredToken = tokenReader() != nil
+        self.isAuthenticated = hasStoredToken
+        self.isRestoring = hasStoredToken
+    }
+
+    func signIn(email: String, password: String) async -> Bool {
+        noticeMessage = nil
+        do {
+            let response = try await client.login(LoginRequest(email: email, password: password))
+            try tokenWriter(response.token)
+            user = response.user
+            isAuthenticated = true
+            isRestoring = false
+            errorMessage = nil
+            noticeMessage = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func restore() async {
+        guard isAuthenticated else {
+            isRestoring = false
+            return
+        }
+
+        isRestoring = true
+        defer { isRestoring = false }
+
+        do {
+            user = try await client.get(.currentUser, as: AuthenticatedUser.self)
+            errorMessage = nil
+            noticeMessage = nil
+        } catch let error as NetworkError where error.isAuthenticationFailure {
+            sessionExpired()
+        } catch is CancellationError {
+            return
+        } catch {
+            // A timeout, offline device or 5xx response is not proof that the
+            // token is invalid. Preserve the Keychain credential for retry.
+            errorMessage = "The club server could not be reached. Your sign-in is saved; check the connection and retry."
+        }
+    }
+
+    func retryRestore() async {
+        await restore()
+    }
+
+    func clearError() {
+        errorMessage = nil
+    }
+
+    func clearNotice() {
+        noticeMessage = nil
+    }
+
+    func signOut() async {
+        var remoteRevocationUnconfirmed = false
+        do {
+            try await client.logout()
+        } catch let error as NetworkError where error.isAuthenticationFailure {
+            // The server has already rejected this credential.
+        } catch {
+            remoteRevocationUnconfirmed = true
+        }
+
+        // Always remove the local credential, even when the device is offline.
+        tokenDeleter()
+        isAuthenticated = false
+        isRestoring = false
+        user = nil
+        errorMessage = nil
+        noticeMessage = remoteRevocationUnconfirmed
+            ? "Signed out on this device. The server could not confirm token revocation; the token will expire automatically."
+            : nil
+    }
+
+    func sessionExpired(ifCurrentTokenMatches requestToken: String? = nil) {
+        if let requestToken,
+           !SessionTokenPolicy.shouldExpire(requestToken: requestToken, currentToken: tokenReader()) {
+            return
+        }
+        tokenDeleter()
+        isAuthenticated = false
+        isRestoring = false
+        user = nil
+        errorMessage = "Your session expired. Please sign in again."
+        noticeMessage = nil
+    }
+}

@@ -15,7 +15,7 @@ struct CoachFormView: View {
 
     var coach: Coach?
 
-    let onSave: (String, String) async -> Void
+    let onSave: (String, String) async -> String?
 
     @Environment(\.dismiss)
     private var dismiss
@@ -28,6 +28,9 @@ struct CoachFormView: View {
 
     @State
     private var saving = false
+
+    @State
+    private var validationMessage: String?
 
     var body: some View {
 
@@ -158,27 +161,22 @@ struct CoachFormView: View {
 
     }
 
+    @ViewBuilder
     private var saveButton: some View {
 
         Button {
 
-            guard
-
-                !fullName.isEmpty,
-
-                !specialty.isEmpty
-
-            else {
-
+            guard !saving else { return }
+            if let message = GymnasticsFormValidation.coach(fullName: fullName, specialty: specialty) {
+                validationMessage = message
                 return
-
             }
 
             Task {
 
                 saving = true
 
-                await onSave(
+                let saveError = await onSave(
 
                     fullName,
 
@@ -186,8 +184,8 @@ struct CoachFormView: View {
 
                 )
 
-                dismiss()
-
+                saving = false
+                if let saveError { validationMessage = saveError } else { dismiss() }
             }
 
         } label: {
@@ -251,7 +249,7 @@ struct CoachFormView: View {
         }
 
         .disabled(saving)
-
+        if let validationMessage { Text(validationMessage).font(.footnote).foregroundStyle(.red) }
     }
 
 }

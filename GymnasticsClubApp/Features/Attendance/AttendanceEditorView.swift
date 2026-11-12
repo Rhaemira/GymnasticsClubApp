@@ -19,16 +19,19 @@ struct AttendanceEditorView: View {
     var attendance: Attendance?
 
     @State
-    private var selectedAthlete: Athlete?
+    private var selectedAthleteID: UUID?
 
     @State
-    private var selectedClass: GymClass?
+    private var selectedClassID: UUID?
 
     @State
     private var attendedOn = Date()
 
     @State
     private var saving = false
+
+    @State
+    private var validationMessage: String?
 
     var body: some View {
 
@@ -52,9 +55,9 @@ struct AttendanceEditorView: View {
 
                             classes: viewModel.classes,
 
-                            selectedAthlete: $selectedAthlete,
+                            selectedAthleteID: $selectedAthleteID,
 
-                            selectedClass: $selectedClass,
+                            selectedClassID: $selectedClassID,
 
                             attendedOn: $attendedOn
 
@@ -104,22 +107,35 @@ struct AttendanceEditorView: View {
 
                 if let attendance {
 
-                    selectedAthlete = viewModel.athletes.first {
+                    selectedAthleteID = attendance.athlete.id
 
-                        $0.id == attendance.athlete.id
-
-                    }
-
-                    selectedClass = viewModel.classes.first {
-
-                        $0.id == attendance.gymClass.id
-
-                    }
+                    selectedClassID = attendance.gymClass.id
 
                     attendedOn = attendance.attendedOn
 
+                } else {
+
+                    // The source arrays may already be populated before this
+                    // sheet appears, in which case onChange will not fire.
+                    // Start with valid selections instead of leaving both
+                    // optional Picker bindings at nil.
+
+                    selectedAthleteID = selectedAthleteID ?? viewModel.athletes.first?.id
+
+                    selectedClassID = selectedClassID ?? viewModel.classes.first?.id
+
                 }
 
+            }
+            .onChange(of: viewModel.athletes.map(\.id)) { _, ids in
+                guard !ids.isEmpty else { return }
+                if let selectedAthleteID, ids.contains(selectedAthleteID) { return }
+                selectedAthleteID = ids.first
+            }
+            .onChange(of: viewModel.classes.map(\.id)) { _, ids in
+                guard !ids.isEmpty else { return }
+                if let selectedClassID, ids.contains(selectedClassID) { return }
+                selectedClassID = ids.first
             }
 
         }
@@ -180,35 +196,42 @@ struct AttendanceEditorView: View {
 
     }
 
+    @ViewBuilder
     private var saveButton: some View {
 
         Button {
 
-            guard
-
-                let athlete = selectedAthlete,
-
-                let gymClass = selectedClass
-
-            else {
-
+            guard !saving else { return }
+            if let message = GymnasticsFormValidation.attendance(
+                hasAthlete: selectedAthleteID != nil,
+                hasClass: selectedClassID != nil,
+                attendedOn: attendedOn
+            ) {
+                validationMessage = message
                 return
-
+            }
+            guard let athleteID = selectedAthleteID,
+                  let classID = selectedClassID,
+                  viewModel.athletes.contains(where: { $0.id == athleteID }),
+                  viewModel.classes.contains(where: { $0.id == classID }) else {
+                validationMessage = "Choose an available athlete and class."
+                return
             }
 
             Task {
 
                 saving = true
 
+                let saveError: String?
                 if let attendance {
 
-                    await viewModel.updateAttendance(
+                    saveError = await viewModel.updateAttendance(
 
                         attendance: attendance,
 
-                        athleteID: athlete.id,
+                        athleteID: athleteID,
 
-                        classID: gymClass.id,
+                        classID: classID,
 
                         attendedOn: attendedOn
 
@@ -218,11 +241,11 @@ struct AttendanceEditorView: View {
 
                 else {
 
-                    await viewModel.addAttendance(
+                    saveError = await viewModel.addAttendance(
 
-                        athleteID: athlete.id,
+                        athleteID: athleteID,
 
-                        classID: gymClass.id,
+                        classID: classID,
 
                         attendedOn: attendedOn
 
@@ -230,8 +253,8 @@ struct AttendanceEditorView: View {
 
                 }
 
-                dismiss()
-
+                saving = false
+                if let saveError { validationMessage = saveError } else { dismiss() }
             }
 
         } label: {
@@ -295,7 +318,7 @@ struct AttendanceEditorView: View {
         }
 
         .disabled(saving)
-
+        if let validationMessage { Text(validationMessage).font(.footnote).foregroundStyle(.red) }
     }
 
 }

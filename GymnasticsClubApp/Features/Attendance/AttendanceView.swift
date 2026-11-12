@@ -1,309 +1,159 @@
-//
-//  AttendanceView.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/15/26.
-//
-
-
 import SwiftUI
 
 struct AttendanceView: View {
+    init(undoToast: UndoToastCoordinator) {
+        self.undoToast = undoToast
+    }
 
-    @StateObject
-    private var viewModel = AttendanceViewModel()
-
-    @State
-    private var searchText = ""
-
-    @State
-    private var showingAddSheet = false
-
-    @State
-    private var selectedAttendance: Attendance?
-
-    @State
-    private var openCardID: UUID?
-
-    @StateObject
-    private var undoToast = UndoToastCoordinator()
+    @Environment(\.isTabActive) private var isTabActive
+    @StateObject private var viewModel = AttendanceViewModel()
+    let undoToast: UndoToastCoordinator
+    @State private var searchText = ""
+    @State private var showingAddSheet = false
+    @State private var selectedAttendance: Attendance?
 
     private var filteredAttendance: [Attendance] {
-
         viewModel.attendance.filter {
-
             searchText.isEmpty ||
-
             $0.athlete.fullName.localizedCaseInsensitiveContains(searchText) ||
-
             $0.gymClass.name.localizedCaseInsensitiveContains(searchText)
-
         }
-
     }
 
     var body: some View {
-
         ZStack(alignment: .bottomTrailing) {
-
             NavigationStack {
-
                 ZStack {
-
-                    AppBackground(
-                        color: FeatureColors.attendance
-                    )
-
+                    AppBackground(color: FeatureColors.attendance)
                     content
-
                 }
-
                 .navigationBarTitleDisplayMode(.inline)
-
-                .toolbar {
-
-                    ToolbarItem(placement: .principal) {
-
-                        EmptyView()
-
-                    }
-
-                }
-
             }
 
-            AddButton(
-                color: FeatureColors.attendance
-            ) {
-
+            AddButton(color: FeatureColors.attendance) {
                 showingAddSheet = true
-
             }
-
             .padding(26)
-
         }
-
-        .undoToast(undoToast)
-
-        .task {
-
+        .task(id: isTabActive) {
+            guard isTabActive else { return }
             await viewModel.loadData()
-
         }
-
         .sheet(isPresented: $showingAddSheet) {
-
-            AttendanceEditorView(
-                viewModel: viewModel
-            )
-
+            AttendanceEditorView(viewModel: viewModel)
         }
-
         .sheet(item: $selectedAttendance) { attendance in
-
-            AttendanceEditorView(
-
-                viewModel: viewModel,
-
-                attendance: attendance
-
-            )
-
+            AttendanceEditorView(viewModel: viewModel, attendance: attendance)
         }
-
     }
 
     @ViewBuilder
-
     private var content: some View {
-
-        if viewModel.isLoading {
-
+        if viewModel.isLoading && viewModel.attendance.isEmpty {
             LoadingView()
-
-        }
-
-        else if let error = viewModel.errorMessage {
-
+        } else if let error = viewModel.errorMessage, viewModel.attendance.isEmpty {
             ErrorView(message: error) {
-
-                Task {
-
-                    await viewModel.loadData()
-
+                Task { await viewModel.loadData() }
+            }
+        } else {
+            List {
+                Section {
+                    VStack(spacing: 18) {
+                        FeatureHeader(
+                            title: "Attendance",
+                            subtitle: "\(filteredAttendance.count) attendance records",
+                            icon: "checkmark.circle.fill",
+                            color: FeatureColors.attendance
+                        )
+                        GlassSearchBar(text: $searchText, color: FeatureColors.attendance)
+                        AttendanceStatsCard(attendance: filteredAttendance)
+                    }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
                 }
 
-            }
-
-        }
-
-        else {
-
-            ScrollView {
-
-                VStack(spacing: 24) {
-
-                    FeatureHeader(
-
-                        title: "Attendance",
-
-                        subtitle: "\(filteredAttendance.count) attendance records",
-
-                        icon: "checkmark.circle.fill",
-
-                        color: FeatureColors.attendance
-
-                    )
-
-                    GlassSearchBar(
-
-                        text: $searchText,
-
-                        color: FeatureColors.attendance
-
-                    )
-
-                    AttendanceStatsCard(
-                        attendance: filteredAttendance
-                    )
-
-                    if filteredAttendance.isEmpty {
-
-                        VStack(spacing: 24) {
-
-                            Image(systemName: "checkmark.circle.badge.plus")
-
-                                .font(.system(size: 72))
-
-                                .foregroundStyle(
-                                    FeatureColors.attendance.gradient
-                                )
-
-                                .symbolEffect(.bounce)
-
-                            Text("No Attendance Yet")
-
-                                .font(.largeTitle.bold())
-
-                            Text("Record your first training session.")
-
-                                .foregroundStyle(.secondary)
-
-                        }
-
-                        .padding(.top, 100)
-
-                    }
-
-                    else {
-
-                        LazyVStack(spacing: 18) {
-
-                            ForEach(filteredAttendance) { attendance in
-
-                                NavigationLink {
-
-                                    AttendanceDetailView(
-                                        attendance: attendance
-                                    )
-
-                                } label: {
-
-                                    SwipeCard(
-
-                                        id: attendance.id,
-
-                                        openCardID: $openCardID,
-
-                                        color: FeatureColors.attendance,
-
-                                        onEdit: {
-
-                                            selectedAttendance = attendance
-
-                                        },
-
-                                        onDelete: {
-
-                                            undoToast.schedule(label: "\(attendance.athlete.fullName) deleted") {
-
-                                                await viewModel.deleteAttendance(attendance)
-
-                                            }
-
-                                        }
-
-                                    ) {
-
-                                        AttendanceRow(attendance: attendance)
-
-                                    }
-
-                                }
-
-                                .buttonStyle(.plain)
-
-                                .contextMenu {
-
-                                    Button {
-
-                                        selectedAttendance = attendance
-
-                                    } label: {
-
-                                        Label(
-                                            "Edit",
-                                            systemImage: "pencil"
-                                        )
-
-                                    }
-
-                                    Button(
-                                        role: .destructive
-                                    ) {
-
-                                        undoToast.schedule(label: "\(attendance.athlete.fullName) deleted") {
-
-                                            await viewModel.deleteAttendance(attendance)
-
-                                        }
-
-                                    } label: {
-
-                                        Label(
-                                            "Delete",
-                                            systemImage: "trash"
-                                        )
-
-                                    }
-
-                                }
-
+                if let error = viewModel.errorMessage {
+                    Section {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                            Text(error)
+                                .font(.footnote)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 4)
+                            Button {
+                                viewModel.errorMessage = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
                             }
-
+                            .accessibilityLabel("Dismiss error")
                         }
-
-                        .padding(.horizontal)
-
+                        .padding(.vertical, 4)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
-
                 }
 
-                .padding(.top)
-
-                .padding(.bottom, 100)
-
+                if filteredAttendance.isEmpty {
+                    ContentUnavailableView(
+                        "No Attendance Yet",
+                        systemImage: "checkmark.circle.badge.plus",
+                        description: Text(searchText.isEmpty ? "Record your first training session." : "Try a different search.")
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                } else {
+                    ForEach(filteredAttendance) { attendance in
+                        NavigationLink {
+                            AttendanceDetailView(attendance: attendance)
+                        } label: {
+                            AttendanceRow(attendance: attendance)
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                selectedAttendance = attendance
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(FeatureColors.attendance)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                undoToast.schedule(label: "Delete \(attendance.athlete.fullName)'s attendance?") {
+                                    await viewModel.deleteAttendance(attendance)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .contextMenu {
+                            Button {
+                                selectedAttendance = attendance
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                undoToast.schedule(label: "Delete \(attendance.athlete.fullName)'s attendance?") {
+                                    await viewModel.deleteAttendance(attendance)
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+                }
             }
-
-            .refreshable {
-
-                await viewModel.loadData()
-
-            }
-
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .refreshable { await viewModel.loadData() }
         }
-
     }
-
 }

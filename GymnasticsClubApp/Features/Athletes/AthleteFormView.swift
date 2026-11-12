@@ -15,7 +15,7 @@ struct AthleteFormView: View {
 
     var athlete: Athlete?
 
-    let onSave: (String, Int, String) async -> Void
+    let onSave: (String, Int, String) async -> String?
 
     @Environment(\.dismiss)
     private var dismiss
@@ -31,6 +31,9 @@ struct AthleteFormView: View {
 
     @State
     private var saving = false
+
+    @State
+    private var validationMessage: String?
 
     private let levels = [
         "Beginner",
@@ -203,24 +206,26 @@ struct AthleteFormView: View {
 
     }
 
+    @ViewBuilder
     private var saveButton: some View {
 
         Button {
 
-            guard
-                let ageValue = Int(age),
-                !fullName.isEmpty
-            else {
-
+            guard !saving else { return }
+            guard let ageValue = Int(age) else {
+                validationMessage = "Enter a valid age between 1 and 120."
                 return
-
+            }
+            if let message = GymnasticsFormValidation.athlete(fullName: fullName, age: ageValue) {
+                validationMessage = message
+                return
             }
 
             Task {
 
                 saving = true
 
-                await onSave(
+                let saveError = await onSave(
 
                     fullName,
 
@@ -230,8 +235,8 @@ struct AthleteFormView: View {
 
                 )
 
-                dismiss()
-
+                saving = false
+                if let saveError { validationMessage = saveError } else { dismiss() }
             }
 
         } label: {
@@ -291,7 +296,7 @@ struct AthleteFormView: View {
         }
 
         .disabled(saving)
-
+        if let validationMessage { Text(validationMessage).font(.footnote).foregroundStyle(.red) }
     }
 
 }
