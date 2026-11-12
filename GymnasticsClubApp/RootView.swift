@@ -43,8 +43,9 @@ struct RootView: View {
     }
 }
 
-/// Each destination owns its NavigationStack. TabView therefore preserves the
-/// navigation history and scroll position of each top-level section.
+/// Mirrors LexiDFA's native TabView implementation. On iOS 26 the system
+/// supplies the floating Liquid Glass tab bar; each feature retains its own
+/// NavigationStack and is loaded only while selected.
 private struct TabShell: View {
     @Binding var selectedTab: AppTab
 

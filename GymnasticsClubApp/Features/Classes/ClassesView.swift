@@ -19,19 +19,22 @@ struct ClassesView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
-                content
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            NavigationLink {
-                                EnrollmentManagementView()
-                            } label: {
-                                Label("Enrollments", systemImage: "person.2.badge.gearshape")
-                                    .labelStyle(.iconOnly)
-                            }
-                            .accessibilityLabel("Manage enrollments")
+                ZStack {
+                    AppBackground(color: FeatureColors.classes)
+                    content
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink {
+                            EnrollmentManagementView()
+                        } label: {
+                            Label("Enrollments", systemImage: "person.2.badge.gearshape")
+                                .labelStyle(.iconOnly)
                         }
+                        .accessibilityLabel("Manage enrollments")
                     }
+                }
             }
 
             AddButton(color: FeatureColors.classes) {
@@ -66,6 +69,22 @@ struct ClassesView: View {
             }
         } else {
             List {
+                Section {
+                    VStack(spacing: 18) {
+                        FeatureHeader(
+                            title: "Classes",
+                            subtitle: "\(filteredClasses.count) active classes",
+                            icon: "figure.flexibility",
+                            color: FeatureColors.classes
+                        )
+                        GlassSearchBar(text: $searchText, color: FeatureColors.classes)
+                    }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+                }
+
                 if let error = viewModel.errorMessage {
                     Section {
                         HStack(alignment: .top, spacing: 10) {
@@ -85,24 +104,9 @@ struct ClassesView: View {
                             .accessibilityLabel("Dismiss error")
                         }
                         .padding(.vertical, 4)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-                Section {
-                    VStack(spacing: 18) {
-                        FeatureHeader(
-                            title: "Classes",
-                            subtitle: "\(filteredClasses.count) active classes",
-                            icon: "figure.flexibility",
-                            color: FeatureColors.classes
-                        )
-                        GlassSearchBar(text: $searchText, color: FeatureColors.classes)
-                    }
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
                 }
 
                 if filteredClasses.isEmpty {
@@ -124,7 +128,7 @@ struct ClassesView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
-                        .swipeActions(edge: .leading) {
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
                                 selectedClass = gymClass
                             } label: {
@@ -132,7 +136,7 @@ struct ClassesView: View {
                             }
                             .tint(FeatureColors.classes)
                         }
-                        .swipeActions(edge: .trailing) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 undoToast.schedule(label: "Delete \(gymClass.name)?") {
                                     await viewModel.deleteClass(gymClass)
@@ -160,9 +164,6 @@ struct ClassesView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background {
-                AppBackground(color: FeatureColors.classes)
-            }
             .refreshable { await viewModel.loadClasses() }
         }
     }

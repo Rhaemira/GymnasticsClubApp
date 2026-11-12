@@ -19,8 +19,11 @@ struct AttendanceView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
-                content
-                    .navigationBarTitleDisplayMode(.inline)
+                ZStack {
+                    AppBackground(color: FeatureColors.attendance)
+                    content
+                }
+                .navigationBarTitleDisplayMode(.inline)
             }
 
             AddButton(color: FeatureColors.attendance) {
@@ -51,6 +54,23 @@ struct AttendanceView: View {
             }
         } else {
             List {
+                Section {
+                    VStack(spacing: 18) {
+                        FeatureHeader(
+                            title: "Attendance",
+                            subtitle: "\(filteredAttendance.count) attendance records",
+                            icon: "checkmark.circle.fill",
+                            color: FeatureColors.attendance
+                        )
+                        GlassSearchBar(text: $searchText, color: FeatureColors.attendance)
+                        AttendanceStatsCard(attendance: filteredAttendance)
+                    }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+                }
+
                 if let error = viewModel.errorMessage {
                     Section {
                         HStack(alignment: .top, spacing: 10) {
@@ -70,25 +90,9 @@ struct AttendanceView: View {
                             .accessibilityLabel("Dismiss error")
                         }
                         .padding(.vertical, 4)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-                Section {
-                    VStack(spacing: 18) {
-                        FeatureHeader(
-                            title: "Attendance",
-                            subtitle: "\(filteredAttendance.count) attendance records",
-                            icon: "checkmark.circle.fill",
-                            color: FeatureColors.attendance
-                        )
-                        GlassSearchBar(text: $searchText, color: FeatureColors.attendance)
-                        AttendanceStatsCard(attendance: filteredAttendance)
-                    }
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
                 }
 
                 if filteredAttendance.isEmpty {
@@ -110,7 +114,7 @@ struct AttendanceView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
-                        .swipeActions(edge: .leading) {
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
                                 selectedAttendance = attendance
                             } label: {
@@ -118,7 +122,7 @@ struct AttendanceView: View {
                             }
                             .tint(FeatureColors.attendance)
                         }
-                        .swipeActions(edge: .trailing) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 undoToast.schedule(label: "Delete \(attendance.athlete.fullName)'s attendance?") {
                                     await viewModel.deleteAttendance(attendance)
@@ -146,9 +150,6 @@ struct AttendanceView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background {
-                AppBackground(color: FeatureColors.attendance)
-            }
             .refreshable { await viewModel.loadData() }
         }
     }

@@ -19,8 +19,11 @@ struct CoachesView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
-                content
-                    .navigationBarTitleDisplayMode(.inline)
+                ZStack {
+                    AppBackground(color: FeatureColors.coaches)
+                    content
+                }
+                .navigationBarTitleDisplayMode(.inline)
             }
 
             AddButton(color: FeatureColors.coaches) {
@@ -34,13 +37,13 @@ struct CoachesView: View {
             await viewModel.loadCoaches()
         }
         .sheet(isPresented: $showingAddSheet) {
-            CoachFormView(title: "New Coach", buttonTitle: "Add") { name, specialty in
-                await viewModel.addCoach(fullName: name, specialty: specialty)
+            CoachFormView(title: "New Coach", buttonTitle: "Add") { fullName, specialty in
+                await viewModel.addCoach(fullName: fullName, specialty: specialty)
             }
         }
         .sheet(item: $selectedCoach) { coach in
-            CoachFormView(title: "Edit Coach", buttonTitle: "Save", coach: coach) { name, specialty in
-                await viewModel.updateCoach(coach: coach, fullName: name, specialty: specialty)
+            CoachFormView(title: "Edit Coach", buttonTitle: "Save", coach: coach) { fullName, specialty in
+                await viewModel.updateCoach(coach: coach, fullName: fullName, specialty: specialty)
             }
         }
     }
@@ -55,6 +58,22 @@ struct CoachesView: View {
             }
         } else {
             List {
+                Section {
+                    VStack(spacing: 18) {
+                        FeatureHeader(
+                            title: "Coaches",
+                            subtitle: "\(filteredCoaches.count) registered coaches",
+                            icon: "person.3.fill",
+                            color: FeatureColors.coaches
+                        )
+                        GlassSearchBar(text: $searchText, color: FeatureColors.coaches)
+                    }
+                    .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+                }
+
                 if let error = viewModel.errorMessage {
                     Section {
                         HStack(alignment: .top, spacing: 10) {
@@ -74,24 +93,9 @@ struct CoachesView: View {
                             .accessibilityLabel("Dismiss error")
                         }
                         .padding(.vertical, 4)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-                Section {
-                    VStack(spacing: 18) {
-                        FeatureHeader(
-                            title: "Coaches",
-                            subtitle: "\(filteredCoaches.count) registered coaches",
-                            icon: "person.3.fill",
-                            color: FeatureColors.coaches
-                        )
-                        GlassSearchBar(text: $searchText, color: FeatureColors.coaches)
-                    }
-                    .padding(.vertical, 8)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
                 }
 
                 if filteredCoaches.isEmpty {
@@ -113,7 +117,7 @@ struct CoachesView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
-                        .swipeActions(edge: .leading) {
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
                                 selectedCoach = coach
                             } label: {
@@ -121,7 +125,7 @@ struct CoachesView: View {
                             }
                             .tint(FeatureColors.coaches)
                         }
-                        .swipeActions(edge: .trailing) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 undoToast.schedule(label: "Delete \(coach.fullName)?") {
                                     await viewModel.deleteCoach(coach)
@@ -149,9 +153,6 @@ struct CoachesView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background {
-                AppBackground(color: FeatureColors.coaches)
-            }
             .refreshable { await viewModel.loadCoaches() }
         }
     }

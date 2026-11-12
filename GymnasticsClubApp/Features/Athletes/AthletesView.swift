@@ -17,8 +17,11 @@ struct AthletesView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
-                content
-                    .navigationBarTitleDisplayMode(.inline)
+                ZStack {
+                    AppBackground(color: FeatureColors.athletes)
+                    content
+                }
+                .navigationBarTitleDisplayMode(.inline)
             }
 
             AddButton(color: FeatureColors.athletes) {
@@ -53,29 +56,6 @@ struct AthletesView: View {
             }
         } else {
             List {
-                if let error = viewModel.errorMessage {
-                    Section {
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.red)
-                            Text(error)
-                                .font(.footnote)
-                                .foregroundStyle(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Spacer(minLength: 4)
-                            Button {
-                                viewModel.errorMessage = nil
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .accessibilityLabel("Dismiss error")
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
                 Section {
                     VStack(spacing: 18) {
                         FeatureHeader(
@@ -90,6 +70,14 @@ struct AthletesView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 12, trailing: 16))
+                }
+
+                if let error = viewModel.errorMessage {
+                    Section {
+                        errorBanner(error) { viewModel.errorMessage = nil }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
                 }
 
                 if filteredAthletes.isEmpty {
@@ -111,7 +99,7 @@ struct AthletesView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
-                        .swipeActions(edge: .leading) {
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
                             Button {
                                 selectedAthlete = athlete
                             } label: {
@@ -119,7 +107,7 @@ struct AthletesView: View {
                             }
                             .tint(FeatureColors.athletes)
                         }
-                        .swipeActions(edge: .trailing) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 undoToast.schedule(label: "Delete \(athlete.fullName)?") {
                                     await viewModel.deleteAthlete(athlete)
@@ -147,10 +135,26 @@ struct AthletesView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background {
-                AppBackground(color: FeatureColors.athletes)
-            }
             .refreshable { await viewModel.loadAthletes() }
         }
     }
+}
+
+@ViewBuilder
+private func errorBanner(_ message: String, dismiss: @escaping () -> Void) -> some View {
+    HStack(alignment: .top, spacing: 10) {
+        Image(systemName: "exclamationmark.triangle.fill")
+            .foregroundStyle(.red)
+        Text(message)
+            .font(.footnote)
+            .foregroundStyle(.primary)
+            .fixedSize(horizontal: false, vertical: true)
+        Spacer(minLength: 4)
+        Button(action: dismiss) {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityLabel("Dismiss error")
+    }
+    .padding(.vertical, 4)
 }
