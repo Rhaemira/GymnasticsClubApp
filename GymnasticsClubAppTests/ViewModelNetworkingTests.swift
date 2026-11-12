@@ -90,3 +90,38 @@ final class ViewModelNetworkingTests: XCTestCase {
         XCTAssertEqual(client.postCount, 0)
     }
 }
+
+
+extension ViewModelNetworkingTests {
+    func testEnrollmentFailurePreservesCapacityDataAndReturnsFailure() async {
+        let athleteID = UUID()
+        let classID = UUID()
+        let athlete = Athlete(id: athleteID, fullName: "Taylor Gymnast", age: 14, level: "Beginner")
+        let gymClass = GymClass(
+            id: classID,
+            name: "Floor",
+            capacity: 1,
+            coach: CoachReference(id: UUID(), fullName: "Coach Name")
+        )
+        let enrollment = Enrollment(
+            id: UUID(),
+            athlete: AttendanceAthlete(id: athleteID, fullName: athlete.fullName),
+            gymClass: AttendanceClass(id: classID, name: gymClass.name)
+        )
+
+        let client = StubAPIClient()
+        client.responses[.enrollments] = [enrollment]
+        client.responses[.athletes] = [athlete]
+        client.responses[.classes] = [gymClass]
+        let viewModel = EnrollmentManagementViewModel(client: client)
+        await viewModel.load()
+        client.shouldFailRequests = true
+
+        let created = await viewModel.enroll(athleteID: UUID(), classID: classID)
+
+        XCTAssertFalse(created)
+        XCTAssertEqual(viewModel.count(for: classID), 1)
+        XCTAssertEqual(viewModel.enrollments, [enrollment])
+        XCTAssertEqual(viewModel.errorMessage, StubAPIClient.StubError.requestRejected.localizedDescription)
+    }
+}
