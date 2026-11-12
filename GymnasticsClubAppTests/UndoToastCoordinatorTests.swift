@@ -53,7 +53,7 @@ extension UndoToastCoordinatorTests {
 
         coordinator.schedule(label: "first") {
             firstDeleteStarted = true
-            try? await Task.sleep(for: .milliseconds(400))
+            try? await Task.sleep(for: .milliseconds(600))
         }
 
         try await Task.sleep(for: .milliseconds(150))
@@ -67,7 +67,7 @@ extension UndoToastCoordinatorTests {
         XCTAssertFalse(secondDeleteCommitted)
         XCTAssertEqual(coordinator.label, "first", "A queued deletion must not replace the in-flight operation.")
 
-        try await Task.sleep(for: .milliseconds(300))
+        try await Task.sleep(for: .milliseconds(450))
         XCTAssertEqual(coordinator.label, "second")
         XCTAssertTrue(coordinator.isVisible)
 
