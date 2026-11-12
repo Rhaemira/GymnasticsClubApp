@@ -42,8 +42,6 @@ final class CoachesViewModel: ObservableObject {
             try await client.post(.coaches, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
             await loadCoaches()
             return nil
-        } catch is CancellationError {
-            return nil
         } catch {
             errorMessage = error.localizedDescription
             return error.localizedDescription
@@ -58,8 +56,6 @@ final class CoachesViewModel: ObservableObject {
                 body: CreateCoachRequest(fullName: fullName, specialty: specialty)
             )
             await loadCoaches()
-            return nil
-        } catch is CancellationError {
             return nil
         } catch {
             errorMessage = error.localizedDescription

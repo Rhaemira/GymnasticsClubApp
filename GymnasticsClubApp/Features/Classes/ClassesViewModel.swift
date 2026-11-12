@@ -51,8 +51,6 @@ final class ClassesViewModel: ObservableObject {
             )
             await loadClasses()
             return nil
-        } catch is CancellationError {
-            return nil
         } catch {
             errorMessage = error.localizedDescription
             return error.localizedDescription
@@ -67,8 +65,6 @@ final class ClassesViewModel: ObservableObject {
                 body: CreateClassRequest(name: name, capacity: capacity, coachID: coachID)
             )
             await loadClasses()
-            return nil
-        } catch is CancellationError {
             return nil
         } catch {
             errorMessage = error.localizedDescription

@@ -64,8 +64,6 @@ final class AttendanceViewModel: ObservableObject {
             )
             await loadData()
             return nil
-        } catch is CancellationError {
-            return nil
         } catch {
             errorMessage = error.localizedDescription
             return error.localizedDescription
@@ -89,8 +87,6 @@ final class AttendanceViewModel: ObservableObject {
                 )
             )
             await loadData()
-            return nil
-        } catch is CancellationError {
             return nil
         } catch {
             errorMessage = error.localizedDescription

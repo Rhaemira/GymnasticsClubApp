@@ -45,8 +45,6 @@ final class AthletesViewModel: ObservableObject {
             )
             await loadAthletes()
             return nil
-        } catch is CancellationError {
-            return nil
         } catch {
             errorMessage = error.localizedDescription
             return error.localizedDescription
@@ -61,8 +59,6 @@ final class AthletesViewModel: ObservableObject {
                 body: CreateAthleteRequest(fullName: fullName, age: age, level: level)
             )
             await loadAthletes()
-            return nil
-        } catch is CancellationError {
             return nil
         } catch {
             errorMessage = error.localizedDescription
