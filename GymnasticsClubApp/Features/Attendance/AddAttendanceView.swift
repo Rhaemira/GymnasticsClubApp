@@ -49,7 +49,7 @@ struct AddAttendanceView: View {
                     ) {
 
                         Text("Select Athlete")
-                            .tag(nil as Athlete?)
+                            .tag(nil as UUID?)
 
                         ForEach(athletes) { athlete in
 
@@ -70,7 +70,7 @@ struct AddAttendanceView: View {
                     ) {
 
                         Text("Select Class")
-                            .tag(nil as GymClass?)
+                            .tag(nil as UUID?)
 
                         ForEach(classes) { gymClass in
 
