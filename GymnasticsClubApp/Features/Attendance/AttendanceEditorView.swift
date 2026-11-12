@@ -113,6 +113,17 @@ struct AttendanceEditorView: View {
 
                     attendedOn = attendance.attendedOn
 
+                } else {
+
+                    // The source arrays may already be populated before this
+                    // sheet appears, in which case onChange will not fire.
+                    // Start with valid selections instead of leaving both
+                    // optional Picker bindings at nil.
+
+                    selectedAthleteID = selectedAthleteID ?? viewModel.athletes.first?.id
+
+                    selectedClassID = selectedClassID ?? viewModel.classes.first?.id
+
                 }
 
             }
