@@ -4,6 +4,7 @@ import Combine
 @MainActor
 final class CoachesViewModel: ObservableObject {
     private let client: any APIClientProtocol
+    private var loadGeneration = 0
 
     init(client: (any APIClientProtocol)? = nil) {
         self.client = client ?? APIClient.shared
@@ -14,14 +15,24 @@ final class CoachesViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     func loadCoaches() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
+        defer {
+            if generation == loadGeneration {
+                isLoading = false
+            }
+        }
+
         do {
-            coaches = try await client.get(.coaches, as: [Coach].self)
+            let rows = try await client.get(.coaches, as: [Coach].self)
+            guard generation == loadGeneration else { return }
+            coaches = rows
         } catch is CancellationError {
             return
         } catch {
+            guard generation == loadGeneration else { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -31,6 +42,8 @@ final class CoachesViewModel: ObservableObject {
             try await client.post(.coaches, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
             await loadCoaches()
             return nil
+        } catch is CancellationError {
+            return nil
         } catch {
             errorMessage = error.localizedDescription
             return error.localizedDescription
@@ -39,8 +52,14 @@ final class CoachesViewModel: ObservableObject {
 
     func updateCoach(coach: Coach, fullName: String, specialty: String) async -> String? {
         do {
-            try await client.put(.coaches, id: coach.id, body: CreateCoachRequest(fullName: fullName, specialty: specialty))
+            try await client.put(
+                .coaches,
+                id: coach.id,
+                body: CreateCoachRequest(fullName: fullName, specialty: specialty)
+            )
             await loadCoaches()
+            return nil
+        } catch is CancellationError {
             return nil
         } catch {
             errorMessage = error.localizedDescription
@@ -51,7 +70,10 @@ final class CoachesViewModel: ObservableObject {
     func deleteCoach(_ coach: Coach) async {
         do {
             try await client.delete(.coaches, id: coach.id)
+            coaches.removeAll { $0.id == coach.id }
             await loadCoaches()
+        } catch is CancellationError {
+            return
         } catch {
             errorMessage = error.localizedDescription
         }
