@@ -58,14 +58,37 @@ struct ClassesView: View {
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.isLoading {
+        if viewModel.isLoading && viewModel.classes.isEmpty {
             LoadingView()
-        } else if let error = viewModel.errorMessage {
+        } else if let error = viewModel.errorMessage, viewModel.classes.isEmpty {
             ErrorView(message: error) {
                 Task { await viewModel.loadClasses() }
             }
         } else {
             List {
+                if let error = viewModel.errorMessage {
+                    Section {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                            Text(error)
+                                .font(.footnote)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 4)
+                            Button {
+                                viewModel.errorMessage = nil
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .accessibilityLabel("Dismiss error")
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                }
                 Section {
                     VStack(spacing: 18) {
                         FeatureHeader(
