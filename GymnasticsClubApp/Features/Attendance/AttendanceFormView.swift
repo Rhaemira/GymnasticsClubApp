@@ -14,10 +14,10 @@ struct AttendanceFormView: View {
     let classes: [GymClass]
 
     @Binding
-    var selectedAthlete: Athlete?
+    var selectedAthleteID: UUID?
 
     @Binding
-    var selectedClass: GymClass?
+    var selectedClassID: UUID?
 
     @Binding
     var attendedOn: Date
@@ -36,7 +36,7 @@ struct AttendanceFormView: View {
 
                 Picker(
                     "Athlete",
-                    selection: $selectedAthlete
+                    selection: $selectedAthleteID
                 ) {
 
                     Text("Select Athlete")
@@ -45,7 +45,7 @@ struct AttendanceFormView: View {
                     ForEach(athletes) { athlete in
 
                         Text(athlete.fullName)
-                            .tag(Optional(athlete))
+                            .tag(Optional(athlete.id))
 
                     }
 
@@ -75,7 +75,7 @@ struct AttendanceFormView: View {
 
                 Picker(
                     "Class",
-                    selection: $selectedClass
+                    selection: $selectedClassID
                 ) {
 
                     Text("Select Class")
@@ -84,7 +84,7 @@ struct AttendanceFormView: View {
                     ForEach(classes) { gymClass in
 
                         Text(gymClass.name)
-                            .tag(Optional(gymClass))
+                            .tag(Optional(gymClass.id))
 
                     }
 
