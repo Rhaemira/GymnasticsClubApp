@@ -62,6 +62,7 @@ final class AuthSession: ObservableObject {
     }
 
     func signIn(email: String, password: String) async -> Bool {
+        noticeMessage = nil
         do {
             let response = try await client.login(LoginRequest(email: email, password: password))
             try tokenWriter(response.token)
