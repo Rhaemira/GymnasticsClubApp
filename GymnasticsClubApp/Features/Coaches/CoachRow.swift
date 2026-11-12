@@ -1,166 +1,51 @@
-//
-//  CoachRow.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/13/26.
-//
-
-
 import SwiftUI
 
 struct CoachRow: View {
-
     let coach: Coach
 
-    @State
-    private var appeared = false
-
     var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "person.3.fill")
+                .font(.system(size: 27, weight: .semibold))
+                .foregroundStyle(FeatureColors.coaches.gradient)
+                .frame(width: 60, height: 60)
+                .background(FeatureColors.coaches.opacity(0.16), in: Circle())
 
-        HStack(spacing: 18) {
-
-            ZStack {
-
-                Circle()
-
-                    .fill(
-                        FeatureColors.coaches.opacity(0.18)
-                    )
-
-                    .frame(width: 64, height: 64)
-
-                Image(systemName: "person.3.fill")
-
-                    .font(.system(size: 28))
-
-                    .foregroundStyle(
-                        FeatureColors.coaches.gradient
-                    )
-
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-
+            VStack(alignment: .leading, spacing: 7) {
                 Text(coach.fullName)
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
 
-                    .font(
-                        .system(
-                            size: 21,
-                            weight: .bold,
-                            design: .rounded
-                        )
-                    )
-
-                HStack(spacing: 8) {
-
-                    Image(systemName: "star.fill")
-
-                        .font(.caption)
-
-                        .foregroundStyle(.yellow)
-
-                    Text(coach.specialty)
-
-                        .font(.subheadline)
-
-                        .foregroundStyle(.secondary)
-
-                }
-
+                Label(coach.specialty, systemImage: "star.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
             Image(systemName: "chevron.right")
-
-                .font(.headline)
-
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.tertiary)
-
         }
-
-        .padding(22)
-
+        .padding(18)
         .background(.ultraThinMaterial)
-
         .overlay {
-
-            RoundedRectangle(cornerRadius: 24)
-
-                .stroke(
-
-                    FeatureColors.coaches.opacity(0.15),
-
-                    lineWidth: 1
-
-                )
-
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(FeatureColors.coaches.opacity(0.14), lineWidth: 1)
         }
-
-        .clipShape(
-
-            RoundedRectangle(
-
-                cornerRadius: 24,
-
-                style: .continuous
-
-            )
-
-        )
-
-        .shadow(
-
-            color: .black.opacity(0.06),
-
-            radius: 12,
-
-            y: 6
-
-        )
-
-        .scaleEffect(appeared ? 1 : 0.94)
-
-        .opacity(appeared ? 1 : 0)
-
-        .animation(
-
-            .spring(
-
-                response: 0.55,
-
-                dampingFraction: 0.82
-
-            ),
-
-            value: appeared
-
-        )
-
-        .onAppear {
-
-            appeared = true
-
-        }
-
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
+        .accessibilityElement(children: .combine)
     }
-
 }
 
 #Preview {
-
     CoachRow(
-
         coach: Coach(
-
             id: UUID(),
-
             fullName: "Daenerys Targaryen",
-
             specialty: "Floor Exercise"
-
         )
-
     )
-
 }
