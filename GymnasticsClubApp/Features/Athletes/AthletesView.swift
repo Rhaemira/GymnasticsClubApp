@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AthletesView: View {
+    @MainActor
     init(undoToast: UndoToastCoordinator = UndoToastCoordinator()) {
         self.undoToast = undoToast
     }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AttendanceView: View {
+    @MainActor
     init(undoToast: UndoToastCoordinator = UndoToastCoordinator()) {
         self.undoToast = undoToast
     }
