@@ -79,11 +79,22 @@ final class AuthSession: ObservableObject {
     }
 
     func signOut() async {
-        try? await APIClient.shared.logout()
+        var remoteRevocationUnconfirmed = false
+        do {
+            try await APIClient.shared.logout()
+        } catch let error as NetworkError where error.isAuthenticationFailure {
+            // The server has already rejected this credential.
+        } catch {
+            remoteRevocationUnconfirmed = true
+        }
+
+        // Always remove the local credential, even when the device is offline.
         KeychainTokenStore.delete()
         isAuthenticated = false
         user = nil
-        errorMessage = nil
+        errorMessage = remoteRevocationUnconfirmed
+            ? "Signed out on this device. The server could not confirm token revocation; the token will expire automatically."
+            : nil
     }
 
     func sessionExpired(ifCurrentTokenMatches requestToken: String? = nil) {
