@@ -20,7 +20,6 @@ struct ClassesView: View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
                 content
-                    .navigationTitle("Classes")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
