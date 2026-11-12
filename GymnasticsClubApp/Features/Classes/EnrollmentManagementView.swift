@@ -15,20 +15,40 @@ final class EnrollmentManagementViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoading = false
 
+    private var loadGeneration = 0
+
+    /// Fetch all three datasets as one snapshot. A partial failure must not
+    /// publish a mixture of new and stale enrollment/capacity data.
     func load() async {
+        loadGeneration += 1
+        let generation = loadGeneration
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
+        defer {
+            if generation == loadGeneration {
+                isLoading = false
+            }
+        }
+
         do {
-            async let e = client.get(.enrollments, as: [Enrollment].self)
-            async let a = client.get(.athletes, as: [Athlete].self)
-            async let c = client.get(.classes, as: [GymClass].self)
-            enrollments = try await e
-            athletes = try await a
-            classes = try await c
+            async let enrollmentRows = client.get(.enrollments, as: [Enrollment].self)
+            async let athleteRows = client.get(.athletes, as: [Athlete].self)
+            async let classRows = client.get(.classes, as: [GymClass].self)
+            let (newEnrollments, newAthletes, newClasses) = try await (
+                enrollmentRows,
+                athleteRows,
+                classRows
+            )
+
+            // A newer refresh may have started while these requests were in flight.
+            guard generation == loadGeneration else { return }
+            enrollments = newEnrollments
+            athletes = newAthletes
+            classes = newClasses
         } catch is CancellationError {
             return
         } catch {
+            guard generation == loadGeneration else { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -50,6 +70,9 @@ final class EnrollmentManagementViewModel: ObservableObject {
     func remove(_ enrollment: Enrollment) async {
         do {
             try await client.delete(.enrollments, id: enrollment.id)
+            // Reflect the confirmed deletion immediately. If the follow-up
+            // refresh is offline, capacity and enrollment counts stay coherent.
+            enrollments.removeAll { $0.id == enrollment.id }
             await load()
         } catch is CancellationError {
             return

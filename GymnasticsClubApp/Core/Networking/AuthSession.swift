@@ -25,22 +25,48 @@ enum SessionTokenPolicy {
 
 @MainActor
 final class AuthSession: ObservableObject {
-    static let shared = AuthSession()
-    @Published private(set) var isAuthenticated = KeychainTokenStore.read() != nil
-    @Published private(set) var isRestoring = KeychainTokenStore.read() != nil
+    static let shared = AuthSession(
+        client: APIClient.shared,
+        tokenReader: { KeychainTokenStore.read() },
+        tokenWriter: { try KeychainTokenStore.save($0) },
+        tokenDeleter: { KeychainTokenStore.delete() }
+    )
+
+    private let client: any APIClientProtocol
+    private let tokenReader: () -> String?
+    private let tokenWriter: (String) throws -> Void
+    private let tokenDeleter: () -> Void
+
+    @Published private(set) var isAuthenticated: Bool
+    @Published private(set) var isRestoring: Bool
     @Published private(set) var user: AuthenticatedUser?
     @Published var errorMessage: String?
 
-    private init() {}
+    /// Dependencies are injectable so session transitions can be tested without
+    /// touching the device Keychain or making real network requests.
+    init(
+        client: any APIClientProtocol,
+        tokenReader: @escaping () -> String?,
+        tokenWriter: @escaping (String) throws -> Void,
+        tokenDeleter: @escaping () -> Void
+    ) {
+        self.client = client
+        self.tokenReader = tokenReader
+        self.tokenWriter = tokenWriter
+        self.tokenDeleter = tokenDeleter
+
+        let hasStoredToken = tokenReader() != nil
+        self.isAuthenticated = hasStoredToken
+        self.isRestoring = hasStoredToken
+    }
 
     func signIn(email: String, password: String) async -> Bool {
         do {
-            let response: LoginResponse = try await APIClient.shared.login(
-                LoginRequest(email: email, password: password)
-            )
-            try KeychainTokenStore.save(response.token)
+            let response = try await client.login(LoginRequest(email: email, password: password))
+            try tokenWriter(response.token)
             user = response.user
             isAuthenticated = true
+            isRestoring = false
             errorMessage = nil
             return true
         } catch {
@@ -59,10 +85,12 @@ final class AuthSession: ObservableObject {
         defer { isRestoring = false }
 
         do {
-            user = try await APIClient.shared.get(.currentUser, as: AuthenticatedUser.self)
+            user = try await client.get(.currentUser, as: AuthenticatedUser.self)
             errorMessage = nil
         } catch let error as NetworkError where error.isAuthenticationFailure {
             sessionExpired()
+        } catch is CancellationError {
+            return
         } catch {
             // A timeout, offline device or 5xx response is not proof that the
             // token is invalid. Preserve the Keychain credential for retry.
@@ -81,7 +109,7 @@ final class AuthSession: ObservableObject {
     func signOut() async {
         var remoteRevocationUnconfirmed = false
         do {
-            try await APIClient.shared.logout()
+            try await client.logout()
         } catch let error as NetworkError where error.isAuthenticationFailure {
             // The server has already rejected this credential.
         } catch {
@@ -89,8 +117,9 @@ final class AuthSession: ObservableObject {
         }
 
         // Always remove the local credential, even when the device is offline.
-        KeychainTokenStore.delete()
+        tokenDeleter()
         isAuthenticated = false
+        isRestoring = false
         user = nil
         errorMessage = remoteRevocationUnconfirmed
             ? "Signed out on this device. The server could not confirm token revocation; the token will expire automatically."
@@ -98,11 +127,13 @@ final class AuthSession: ObservableObject {
     }
 
     func sessionExpired(ifCurrentTokenMatches requestToken: String? = nil) {
-        if let requestToken, !SessionTokenPolicy.shouldExpire(requestToken: requestToken, currentToken: KeychainTokenStore.read()) {
+        if let requestToken,
+           !SessionTokenPolicy.shouldExpire(requestToken: requestToken, currentToken: tokenReader()) {
             return
         }
-        KeychainTokenStore.delete()
+        tokenDeleter()
         isAuthenticated = false
+        isRestoring = false
         user = nil
         errorMessage = "Your session expired. Please sign in again."
     }
