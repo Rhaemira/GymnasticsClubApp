@@ -142,3 +142,21 @@ extension APIContractTests {
         ))
     }
 }
+
+
+extension APIContractTests {
+    func testLateUnauthorizedResponseCannotExpireAReplacementSession() {
+        XCTAssertFalse(SessionTokenPolicy.shouldExpire(
+            requestToken: "previous-session-token",
+            currentToken: "new-session-token"
+        ))
+        XCTAssertFalse(SessionTokenPolicy.shouldExpire(
+            requestToken: "previous-session-token",
+            currentToken: nil
+        ))
+        XCTAssertTrue(SessionTokenPolicy.shouldExpire(
+            requestToken: "current-session-token",
+            currentToken: "current-session-token"
+        ))
+    }
+}
