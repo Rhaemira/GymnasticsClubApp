@@ -17,7 +17,7 @@ struct ClassRow: View {
                     .foregroundStyle(.primary)
 
                 HStack(spacing: 14) {
-                    Label("\(gymClass.capacity) places", systemImage: "person.2.fill")
+                    Label("Capacity \(gymClass.capacity)", systemImage: "person.2.fill")
                     Label(gymClass.coach.fullName, systemImage: "person.fill")
                 }
                 .font(.caption)
