@@ -19,10 +19,10 @@ struct AttendanceEditorView: View {
     var attendance: Attendance?
 
     @State
-    private var selectedAthlete: Athlete?
+    private var selectedAthleteID: UUID?
 
     @State
-    private var selectedClass: GymClass?
+    private var selectedClassID: UUID?
 
     @State
     private var attendedOn = Date()
@@ -55,9 +55,9 @@ struct AttendanceEditorView: View {
 
                             classes: viewModel.classes,
 
-                            selectedAthlete: $selectedAthlete,
+                            selectedAthleteID: $selectedAthleteID,
 
-                            selectedClass: $selectedClass,
+                            selectedClassID: $selectedClassID,
 
                             attendedOn: $attendedOn
 
@@ -107,22 +107,24 @@ struct AttendanceEditorView: View {
 
                 if let attendance {
 
-                    selectedAthlete = viewModel.athletes.first {
+                    selectedAthleteID = attendance.athlete.id
 
-                        $0.id == attendance.athlete.id
-
-                    }
-
-                    selectedClass = viewModel.classes.first {
-
-                        $0.id == attendance.gymClass.id
-
-                    }
+                    selectedClassID = attendance.gymClass.id
 
                     attendedOn = attendance.attendedOn
 
                 }
 
+            }
+            .onChange(of: viewModel.athletes.map(\.id)) { _, ids in
+                guard !ids.isEmpty else { return }
+                if let selectedAthleteID, ids.contains(selectedAthleteID) { return }
+                selectedAthleteID = ids.first
+            }
+            .onChange(of: viewModel.classes.map(\.id)) { _, ids in
+                guard !ids.isEmpty else { return }
+                if let selectedClassID, ids.contains(selectedClassID) { return }
+                selectedClassID = ids.first
             }
 
         }
@@ -190,14 +192,20 @@ struct AttendanceEditorView: View {
 
             guard !saving else { return }
             if let message = GymnasticsFormValidation.attendance(
-                hasAthlete: selectedAthlete != nil,
-                hasClass: selectedClass != nil,
+                hasAthlete: selectedAthleteID != nil,
+                hasClass: selectedClassID != nil,
                 attendedOn: attendedOn
             ) {
                 validationMessage = message
                 return
             }
-            guard let athlete = selectedAthlete, let gymClass = selectedClass else { return }
+            guard let athleteID = selectedAthleteID,
+                  let classID = selectedClassID,
+                  viewModel.athletes.contains(where: { $0.id == athleteID }),
+                  viewModel.classes.contains(where: { $0.id == classID }) else {
+                validationMessage = "Choose an available athlete and class."
+                return
+            }
 
             Task {
 
@@ -210,9 +218,9 @@ struct AttendanceEditorView: View {
 
                         attendance: attendance,
 
-                        athleteID: athlete.id,
+                        athleteID: athleteID,
 
-                        classID: gymClass.id,
+                        classID: classID,
 
                         attendedOn: attendedOn
 
