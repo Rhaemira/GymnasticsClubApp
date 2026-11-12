@@ -1,6 +1,6 @@
 # Gymnastics Club — iOS
 
-[![iOS CI](https://github.com/Rhaemira/GymnasticsClubApp/actions/workflows/ios.yml/badge.svg?branch=main)](https://github.com/Rhaemira/GymnasticsClubApp/actions/workflows/ios.yml)
+[![iOS CI](https://github.com/Rhaemira/GymnasticsClubApp/actions/workflows/ios.yml/badge.svg?branch=engineering%2Fsecure-integrated-overhaul)](https://github.com/Rhaemira/GymnasticsClubApp/actions/workflows/ios.yml)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%2F%20iPadOS-147EFB)](#)
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 
@@ -12,7 +12,7 @@ A native SwiftUI application for managing a gymnastics club. It connects to the 
 
 - **Secure access** — administrator sign-in, bearer-token sessions, and Keychain-backed token storage.
 - **Club operations** — manage athletes, coaches, classes, enrollments, and attendance.
-- **At-a-glance insight** — dashboard metrics, recent activity, reports, and analytics.
+- **At-a-glance insight** — dashboard metrics, recent activity, and analytics.
 - **Native interaction** — SwiftUI navigation, system list swipe actions, and queued delete/Undo behavior.
 - **Accessibility and appearance** — light/dark appearance, Dynamic Type-aware controls, accessibility labels, and Reduce Motion support.
 
