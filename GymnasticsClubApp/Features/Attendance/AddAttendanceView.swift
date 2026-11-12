@@ -24,10 +24,10 @@ struct AddAttendanceView: View {
     private var dismiss
 
     @State
-    private var selectedAthlete: Athlete?
+    private var selectedAthleteID: UUID?
 
     @State
-    private var selectedClass: GymClass?
+    private var selectedClassID: UUID?
 
     @State
     private var attendedOn = Date()
@@ -45,7 +45,7 @@ struct AddAttendanceView: View {
 
                     Picker(
                         "Athlete",
-                        selection: $selectedAthlete
+                        selection: $selectedAthleteID
                     ) {
 
                         Text("Select Athlete")
@@ -54,7 +54,7 @@ struct AddAttendanceView: View {
                         ForEach(athletes) { athlete in
 
                             Text(athlete.fullName)
-                                .tag(athlete as Athlete?)
+                                .tag(Optional(athlete.id))
 
                         }
 
@@ -66,7 +66,7 @@ struct AddAttendanceView: View {
 
                     Picker(
                         "Class",
-                        selection: $selectedClass
+                        selection: $selectedClassID
                     ) {
 
                         Text("Select Class")
@@ -75,7 +75,7 @@ struct AddAttendanceView: View {
                         ForEach(classes) { gymClass in
 
                             Text(gymClass.name)
-                                .tag(gymClass as GymClass?)
+                                .tag(Optional(gymClass.id))
 
                         }
 
@@ -138,8 +138,8 @@ struct AddAttendanceView: View {
 
                     }
                     .disabled(
-                        selectedAthlete == nil ||
-                        selectedClass == nil ||
+                        selectedAthleteID == nil ||
+                        selectedClassID == nil ||
                         isSaving
                     )
 
@@ -155,9 +155,9 @@ struct AddAttendanceView: View {
 
         guard
 
-            let athlete = selectedAthlete,
+            let athleteID = selectedAthleteID,
 
-            let gymClass = selectedClass
+            let classID = selectedClassID
 
         else {
 
@@ -169,9 +169,9 @@ struct AddAttendanceView: View {
 
         await onSave(
 
-            athlete.id,
+            athleteID,
 
-            gymClass.id,
+            classID,
 
             attendedOn
 
