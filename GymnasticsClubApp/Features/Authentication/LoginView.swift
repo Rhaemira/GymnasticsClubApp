@@ -34,8 +34,14 @@ struct LoginView: View {
                 Button {
                     Task {
                         isSubmitting = true
-                        _ = await session.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
+                        let signedIn = await session.signIn(
+                            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                            password: password
+                        )
                         isSubmitting = false
+                        if signedIn {
+                            password = ""
+                        }
                     }
                 } label: {
                     HStack {
