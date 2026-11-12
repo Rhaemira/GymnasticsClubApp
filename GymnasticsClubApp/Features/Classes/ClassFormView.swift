@@ -29,7 +29,7 @@ struct ClassFormView: View {
     private var capacity = ""
 
     @State
-    private var selectedCoach: Coach?
+    private var selectedCoachID: UUID?
 
     @State
     private var saving = false
@@ -90,20 +90,21 @@ struct ClassFormView: View {
                     name = gymClass.name
                     capacity = "\(gymClass.capacity)"
 
-                    selectedCoach = coaches.first {
-
-                        $0.id == gymClass.coach.id
-
-                    }
+                    selectedCoachID = gymClass.coach.id
 
                 }
 
                 else {
 
-                    selectedCoach = coaches.first
+                    selectedCoachID = coaches.first?.id
 
                 }
 
+            }
+            .onChange(of: coaches.map(\.id)) { _, coachIDs in
+                guard !coachIDs.isEmpty else { return }
+                if let selectedCoachID, coachIDs.contains(selectedCoachID) { return }
+                selectedCoachID = coachIDs.first
             }
 
         }
@@ -190,36 +191,25 @@ struct ClassFormView: View {
 
                     .font(.headline)
 
-                Picker(
-                    "Coach",
-                    selection: $selectedCoach
-                ) {
-
-                    ForEach(coaches) { coach in
-
-                        Text(coach.fullName)
-
-                            .tag(Optional(coach))
-
+                if coaches.isEmpty {
+                    Text("No coaches available. Add a coach first.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Coach", selection: $selectedCoachID) {
+                        Text("Select Coach")
+                            .tag(nil as UUID?)
+                        ForEach(coaches) { coach in
+                            Text(coach.fullName)
+                                .tag(Optional(coach.id))
+                        }
                     }
-
+                    .pickerStyle(.menu)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
                 }
-
-                .pickerStyle(.menu)
-
-                .padding()
-
-                .frame(maxWidth: .infinity)
-
-                .background(.ultraThinMaterial)
-
-                .clipShape(
-
-                    RoundedRectangle(
-                        cornerRadius: 18
-                    )
-
-                )
 
             }
 
@@ -233,8 +223,9 @@ struct ClassFormView: View {
         Button {
 
             guard !saving else { return }
-            guard let coach = selectedCoach else {
-                validationMessage = "Choose a coach for this class."
+            guard let selectedCoachID,
+                  let coach = coaches.first(where: { $0.id == selectedCoachID }) else {
+                validationMessage = "Choose an available coach for this class."
                 return
             }
             guard let cap = Int(capacity) else {
