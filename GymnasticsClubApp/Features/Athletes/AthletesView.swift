@@ -89,7 +89,7 @@ struct AthletesView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 7, leading: 16, bottom: 7, trailing: 16))
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        .swipeActions(edge: .leading) {
                             Button {
                                 selectedAthlete = athlete
                             } label: {
@@ -97,7 +97,7 @@ struct AthletesView: View {
                             }
                             .tint(FeatureColors.athletes)
                         }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
                                 undoToast.schedule(label: "Delete \(athlete.fullName)?") {
                                     await viewModel.deleteAthlete(athlete)
