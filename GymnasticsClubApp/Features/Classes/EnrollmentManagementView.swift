@@ -26,21 +26,36 @@ final class EnrollmentManagementViewModel: ObservableObject {
             enrollments = try await e
             athletes = try await a
             classes = try await c
-        } catch { errorMessage = error.localizedDescription }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
-    func enroll(athleteID: UUID, classID: UUID) async {
+    @discardableResult
+    func enroll(athleteID: UUID, classID: UUID) async -> Bool {
         do {
             try await client.post(.enrollments, body: CreateEnrollmentRequest(athleteID: athleteID, classID: classID))
             await load()
-        } catch { errorMessage = error.localizedDescription }
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
     func remove(_ enrollment: Enrollment) async {
         do {
             try await client.delete(.enrollments, id: enrollment.id)
             await load()
-        } catch { errorMessage = error.localizedDescription }
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func count(for classID: UUID) -> Int {
@@ -67,10 +82,28 @@ struct EnrollmentManagementView: View {
             if viewModel.isLoading && viewModel.classes.isEmpty {
                 ProgressView("Loading enrollments…")
             } else if let error = viewModel.errorMessage, viewModel.classes.isEmpty {
-                ContentUnavailableView("Could not load enrollments", systemImage: "person.2.badge.gearshape", description: Text(error))
+                VStack(spacing: 16) {
+                    ContentUnavailableView(
+                        "Could not load enrollments",
+                        systemImage: "person.2.badge.gearshape",
+                        description: Text(error)
+                    )
+                    Button("Retry") {
+                        Task { await viewModel.load() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
             } else {
                 List {
                     Section("New enrollment") {
+                        if viewModel.athletes.isEmpty || viewModel.classes.isEmpty {
+                            ContentUnavailableView(
+                                "Nothing to enroll yet",
+                                systemImage: "person.2.badge.gearshape",
+                                description: Text("Add at least one athlete and one class before creating an enrollment.")
+                            )
+                        }
                         Picker("Athlete", selection: $selectedAthleteID) {
                             Text("Choose an athlete").tag(UUID?.none)
                             ForEach(viewModel.athletes) { athlete in
@@ -89,7 +122,10 @@ struct EnrollmentManagementView: View {
                             guard let athleteID = selectedAthleteID, let classID = selectedClassID else { return }
                             Task {
                                 isSubmitting = true
-                                await viewModel.enroll(athleteID: athleteID, classID: classID)
+                                let created = await viewModel.enroll(athleteID: athleteID, classID: classID)
+                                if created {
+                                    selectedAthleteID = nil
+                                }
                                 isSubmitting = false
                             }
                         } label: {
@@ -153,6 +189,16 @@ struct EnrollmentManagementView: View {
         }
         .navigationTitle("Enrollments")
         .task { await viewModel.load() }
+        .onChange(of: viewModel.athletes.map(\.id)) { _, ids in
+            if let selectedAthleteID, !ids.contains(selectedAthleteID) {
+                self.selectedAthleteID = nil
+            }
+        }
+        .onChange(of: viewModel.classes.map(\.id)) { _, ids in
+            if let selectedClassID, !ids.contains(selectedClassID) {
+                self.selectedClassID = nil
+            }
+        }
         .alert("Enrollment error", isPresented: Binding(
             get: { viewModel.errorMessage != nil && !viewModel.classes.isEmpty },
             set: { if !$0 { viewModel.errorMessage = nil } }
