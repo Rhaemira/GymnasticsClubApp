@@ -80,7 +80,10 @@ final class AuthSession: ObservableObject {
         errorMessage = nil
     }
 
-    func sessionExpired() {
+    func sessionExpired(ifCurrentTokenMatches requestToken: String? = nil) {
+        if let requestToken, KeychainTokenStore.read() != requestToken {
+            return
+        }
         KeychainTokenStore.delete()
         isAuthenticated = false
         user = nil
