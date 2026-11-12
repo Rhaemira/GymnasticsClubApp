@@ -10,7 +10,8 @@ SwiftUI client for the Gymnastics Club management API. The app requires an admin
 - Attendance creation and editing
 - Enrollment management with class capacity visibility
 - Backend-powered analytics
-- Feature-colored floating tab navigation
+- Native SwiftUI tab navigation with per-section feature tint and the system-managed iOS tab-bar glass treatment
+- Native List swipe actions for edit and destructive delete, with a queued four-second Undo window
 - Light/dark appearance, Dynamic Type-friendly controls and accessibility labels
 
 ## Requirements
@@ -45,12 +46,12 @@ Do not commit production URLs containing credentials, tokens or private informat
 ## Architecture
 
 - `RootView`: authentication gate and five-tab shell
-- `Core/DesignSystem`: feature colors, reusable components and floating tab island
+- `Core/DesignSystem`: feature colors and reusable components; navigation chrome is provided by native SwiftUI
 - `Core/Networking`: injectable URLSession client, API endpoints, typed errors and Keychain token storage
 - `Features`: dashboard, athletes, coaches, classes, attendance, analytics and enrollment management
 - `Models`: Codable API request/response models
 
-The tab shell keeps each tab's navigation stack alive while switching tabs. The server remains authoritative for validation and business rules.
+Each native `TabView` destination owns its own `NavigationStack`, preserving navigation history while switching sections. Management lists use SwiftUI `List` and `.swipeActions` so gesture handling, row tracking, and animation remain system-native. Delete actions enter a serialized Undo queue before the server mutation is sent. The server remains authoritative for validation and business rules.
 
 ## API contract
 
