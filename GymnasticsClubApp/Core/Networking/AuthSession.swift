@@ -33,9 +33,9 @@ final class AuthSession: ObservableObject {
     )
 
     private let client: any APIClientProtocol
-    private let tokenReader: () -> String?
-    private let tokenWriter: (String) throws -> Void
-    private let tokenDeleter: () -> Void
+    private let tokenReader: @MainActor () -> String?
+    private let tokenWriter: @MainActor (String) throws -> Void
+    private let tokenDeleter: @MainActor () -> Void
 
     @Published private(set) var isAuthenticated: Bool
     @Published private(set) var isRestoring: Bool
