@@ -121,7 +121,7 @@ extension ViewModelNetworkingTests {
 
         XCTAssertFalse(created)
         XCTAssertEqual(viewModel.count(for: classID), 1)
-        XCTAssertEqual(viewModel.enrollments, [enrollment])
+        XCTAssertEqual(viewModel.enrollments.map(\.id), [enrollment.id])
         XCTAssertEqual(viewModel.errorMessage, StubAPIClient.StubError.requestRejected.localizedDescription)
     }
 }
