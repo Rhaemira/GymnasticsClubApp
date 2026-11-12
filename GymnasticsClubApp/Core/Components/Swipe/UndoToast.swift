@@ -26,6 +26,7 @@ final class UndoToastCoordinator: ObservableObject {
     private let duration: Double
     private var queue: [PendingDeletion] = []
     private var active: PendingDeletion?
+    private var isCommitting = false
     private var commitTask: Task<Void, Never>?
 
     init(duration: Double = 4.0) {
@@ -36,7 +37,7 @@ final class UndoToastCoordinator: ObservableObject {
     /// its own complete undo window before its server operation is committed.
     func schedule(label: String, action: @escaping () async -> Void) {
         queue.append(PendingDeletion(id: UUID(), label: label, action: action))
-        guard active == nil else { return }
+        guard active == nil, !isCommitting else { return }
         presentNext()
     }
 
@@ -51,7 +52,7 @@ final class UndoToastCoordinator: ObservableObject {
     }
 
     private func presentNext() {
-        guard active == nil, !queue.isEmpty else { return }
+        guard active == nil, !isCommitting, !queue.isEmpty else { return }
         let pending = queue.removeFirst()
         active = pending
         label = pending.label
@@ -80,9 +81,11 @@ final class UndoToastCoordinator: ObservableObject {
             guard let self, self.active?.id == pending.id else { return }
             self.commitTask = nil
             self.active = nil
+            self.isCommitting = true
             self.dismiss()
 
             await pending.action()
+            self.isCommitting = false
             self.presentNext()
         }
     }
