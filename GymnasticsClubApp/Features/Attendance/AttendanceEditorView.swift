@@ -232,9 +232,9 @@ struct AttendanceEditorView: View {
 
                     saveError = await viewModel.addAttendance(
 
-                        athleteID: athlete.id,
+                        athleteID: athleteID,
 
-                        classID: gymClass.id,
+                        classID: classID,
 
                         attendedOn: attendedOn
 
