@@ -20,7 +20,6 @@ struct AttendanceView: View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
                 content
-                    .navigationTitle("Attendance")
                     .navigationBarTitleDisplayMode(.inline)
             }
 
