@@ -43,33 +43,39 @@ struct RootView: View {
     }
 }
 
+/// Each destination owns its NavigationStack. TabView therefore preserves the
+/// navigation history and scroll position of each top-level section.
 private struct TabShell: View {
     @Binding var selectedTab: AppTab
 
     var body: some View {
-        ZStack {
-            tab(DashboardView(), is: .dashboard)
-            tab(AthletesView(), is: .athletes)
-            tab(CoachesView(), is: .coaches)
-            tab(ClassesView(), is: .classes)
-            tab(AttendanceView(), is: .attendance)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            CustomTabBar(selectedTab: $selectedTab)
-                .padding(.horizontal, 12)
-                .padding(.top, 6)
-                .padding(.bottom, 4)
-        }
-        .background(Color(uiColor: .systemBackground))
-    }
+        TabView(selection: $selectedTab) {
+            DashboardView()
+                .environment(\.isTabActive, selectedTab == .dashboard)
+                .tabItem { Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon) }
+                .tag(AppTab.dashboard)
 
-    private func tab<Content: View>(_ content: Content, is tab: AppTab) -> some View {
-        content
-            .environment(\.isTabActive, selectedTab == tab)
-            .opacity(selectedTab == tab ? 1 : 0)
-            .allowsHitTesting(selectedTab == tab)
-            .accessibilityHidden(selectedTab != tab)
-            .zIndex(selectedTab == tab ? 1 : 0)
+            AthletesView()
+                .environment(\.isTabActive, selectedTab == .athletes)
+                .tabItem { Label(AppTab.athletes.title, systemImage: AppTab.athletes.icon) }
+                .tag(AppTab.athletes)
+
+            CoachesView()
+                .environment(\.isTabActive, selectedTab == .coaches)
+                .tabItem { Label(AppTab.coaches.title, systemImage: AppTab.coaches.icon) }
+                .tag(AppTab.coaches)
+
+            ClassesView()
+                .environment(\.isTabActive, selectedTab == .classes)
+                .tabItem { Label(AppTab.classes.title, systemImage: AppTab.classes.icon) }
+                .tag(AppTab.classes)
+
+            AttendanceView()
+                .environment(\.isTabActive, selectedTab == .attendance)
+                .tabItem { Label(AppTab.attendance.title, systemImage: AppTab.attendance.icon) }
+                .tag(AppTab.attendance)
+        }
+        .tint(selectedTab.color)
     }
 }
 
