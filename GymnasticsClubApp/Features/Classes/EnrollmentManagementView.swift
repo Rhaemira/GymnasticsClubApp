@@ -104,18 +104,22 @@ struct EnrollmentManagementView: View {
                                 description: Text("Add at least one athlete and one class before creating an enrollment.")
                             )
                         }
-                        Picker("Athlete", selection: $selectedAthleteID) {
-                            Text("Choose an athlete").tag(UUID?.none)
-                            ForEach(viewModel.athletes) { athlete in
-                                Text(athlete.fullName).tag(Optional(athlete.id))
+                        if !viewModel.athletes.isEmpty {
+                            Picker("Athlete", selection: $selectedAthleteID) {
+                                Text("Choose an athlete").tag(UUID?.none)
+                                ForEach(viewModel.athletes) { athlete in
+                                    Text(athlete.fullName).tag(Optional(athlete.id))
+                                }
                             }
                         }
-                        Picker("Class", selection: $selectedClassID) {
-                            Text("Choose a class").tag(UUID?.none)
-                            ForEach(viewModel.classes) { gymClass in
-                                let count = viewModel.count(for: gymClass.id)
-                                Text("\(gymClass.name) · \(max(gymClass.capacity - count, 0)) places left")
-                                    .tag(Optional(gymClass.id))
+                        if !viewModel.classes.isEmpty {
+                            Picker("Class", selection: $selectedClassID) {
+                                Text("Choose a class").tag(UUID?.none)
+                                ForEach(viewModel.classes) { gymClass in
+                                    let count = viewModel.count(for: gymClass.id)
+                                    Text("\(gymClass.name) · \(max(gymClass.capacity - count, 0)) places left")
+                                        .tag(Optional(gymClass.id))
+                                }
                             }
                         }
                         Button {
