@@ -20,7 +20,6 @@ struct CoachesView: View {
         ZStack(alignment: .bottomTrailing) {
             NavigationStack {
                 content
-                    .navigationTitle("Coaches")
                     .navigationBarTitleDisplayMode(.inline)
             }
 
