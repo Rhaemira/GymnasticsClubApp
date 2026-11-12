@@ -12,6 +12,7 @@ extension EnvironmentValues {
 }
 
 struct RootView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var session = AuthSession.shared
     @State private var selectedTab: AppTab = .dashboard
 
@@ -27,7 +28,7 @@ struct RootView: View {
             }
         }
         .task { await session.restore() }
-        .animation(.easeInOut(duration: 0.22), value: session.isAuthenticated)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: session.isAuthenticated)
         .alert(
             session.noticeMessage == nil ? "Connection problem" : "Sign-out notice",
             isPresented: Binding(

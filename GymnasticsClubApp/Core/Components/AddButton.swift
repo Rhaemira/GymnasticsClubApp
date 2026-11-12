@@ -4,10 +4,15 @@ struct AddButton: View {
     let color: Color
     let action: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPressed = false
 
     var body: some View {
         Button {
+            guard !reduceMotion else {
+                action()
+                return
+            }
             withAnimation(.spring(response: 0.24, dampingFraction: 0.68)) {
                 isPressed = true
             }
@@ -32,7 +37,7 @@ struct AddButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.28, dampingFraction: 0.72), value: isPressed)
+        .animation(reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.72), value: isPressed)
         .accessibilityLabel("Add")
     }
 }
