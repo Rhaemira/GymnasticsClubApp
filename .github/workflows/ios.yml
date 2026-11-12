@@ -34,4 +34,5 @@ jobs:
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             CODE_SIGNING_ALLOWED=NO \
             API_BASE_URL=https://api.example.invalid \
+            -parallel-testing-enabled NO \
             test
