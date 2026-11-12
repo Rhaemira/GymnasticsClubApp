@@ -43,3 +43,35 @@ final class UndoToastCoordinatorTests: XCTestCase {
         XCTAssertEqual(committed, ["second"], "The next deletion must receive its own full undo interval.")
     }
 }
+
+
+extension UndoToastCoordinatorTests {
+    func testNextUndoWindowWaitsForPreviousDeleteRequestToFinish() async throws {
+        let coordinator = UndoToastCoordinator(duration: 0.1)
+        var firstDeleteStarted = false
+        var secondDeleteCommitted = false
+
+        coordinator.schedule(label: "first") {
+            firstDeleteStarted = true
+            try? await Task.sleep(for: .milliseconds(400))
+        }
+
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertTrue(firstDeleteStarted)
+
+        coordinator.schedule(label: "second") {
+            secondDeleteCommitted = true
+        }
+
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertFalse(secondDeleteCommitted)
+        XCTAssertEqual(coordinator.label, "first", "A queued deletion must not replace the in-flight operation.")
+
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertEqual(coordinator.label, "second")
+        XCTAssertTrue(coordinator.isVisible)
+
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertTrue(secondDeleteCommitted)
+    }
+}
