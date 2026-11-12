@@ -46,9 +46,9 @@ final class AuthSession: ObservableObject {
     /// touching the device Keychain or making real network requests.
     init(
         client: any APIClientProtocol,
-        tokenReader: @escaping () -> String?,
-        tokenWriter: @escaping (String) throws -> Void,
-        tokenDeleter: @escaping () -> Void
+        tokenReader: @escaping @MainActor () -> String?,
+        tokenWriter: @escaping @MainActor (String) throws -> Void,
+        tokenDeleter: @escaping @MainActor () -> Void
     ) {
         self.client = client
         self.tokenReader = tokenReader
