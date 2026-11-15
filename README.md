@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/platform-iOS%20%2F%20iPadOS-147EFB)](#)
 [![Swift](https://img.shields.io/badge/Swift-6-orange)](#)
 
-A native SwiftUI application for managing a gymnastics club. It connects to the companion [Gymnastics Club Backend](https://github.com/Rhaemira/GymnasticsClubBackend), with PostgreSQL as the system of record.
+A production-minded SwiftUI client for day-to-day gymnastics club administration. The app connects to the companion [Gymnastics Club Backend](https://github.com/Rhaemira/GymnasticsClubBackend), with PostgreSQL as the authoritative system of record.
 
 > **Project status:** Active engineering work. The feature branch contains the current overhaul. CI and manual end-to-end validation should be checked before treating a build as release-ready.
 
@@ -15,6 +15,27 @@ A native SwiftUI application for managing a gymnastics club. It connects to the 
 - **At-a-glance insight** — dashboard metrics, recent activity, and analytics.
 - **Native interaction** — SwiftUI navigation, system list swipe actions, and queued delete/Undo behavior.
 - **Accessibility and appearance** — light/dark appearance, Dynamic Type-aware controls, accessibility labels, and Reduce Motion support.
+
+## Project structure
+
+```text
+GymnasticsClubApp/
+├── Core/
+│   ├── Components/       # Shared controls and Undo presentation
+│   ├── DesignSystem/     # Feature colors, tab definitions and UI tokens
+│   └── Networking/       # API transport, session, Keychain and validation
+├── Features/
+│   ├── Authentication/
+│   ├── Dashboard/
+│   ├── Athletes/
+│   ├── Coaches/
+│   ├── Classes/
+│   └── Attendance/
+├── Models/               # API data contracts
+└── Views/                # Reports, analytics and settings
+
+GymnasticsClubAppTests/   # API, session, networking and state regression tests
+```
 
 ## Screens and architecture
 
@@ -84,7 +105,11 @@ xcodebuild test \
   API_BASE_URL=https://api.example.invalid
 ```
 
-The test target covers API payload contracts, authentication/session behavior, enrollment and management view models, networking, and Undo coordination. GitHub Actions builds the simulator app and runs the XCTest target. UI automation against a live backend and physical-device validation are separate release-certification tasks.
+The test target covers API payload contracts, authentication/session behavior (including stale asynchronous session responses), enrollment and management view models, networking, URL policy, and Undo coordination. GitHub Actions builds Debug and Release Simulator configurations, runs static analysis, and executes the XCTest target. UI automation against a live backend and physical-device validation remain release-certification tasks.
+
+## Release readiness
+
+Use [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) before creating a release or distributing a build. CI passing is necessary but does not replace a physical-device smoke test against the intended backend environment.
 
 ## API integration
 
@@ -95,7 +120,7 @@ The client integrates with the backend's authentication, athlete, coach, class, 
 - Keep API request/response models aligned with the backend contract.
 - Keep secrets and session tokens out of source control, logs, screenshots, and issue reports.
 - Prefer native SwiftUI behavior and shared components over parallel one-off implementations.
-- Cover networking and state transitions with deterministic tests.
+- Cover networking and state transitions with deterministic tests.\n- Permit plain HTTP only for explicit development builds; staging and production must use HTTPS.
 - Preserve user data; do not use destructive migrations or unverified mock screenshots as release evidence.
 
 ## Contributing
