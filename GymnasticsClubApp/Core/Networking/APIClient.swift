@@ -172,10 +172,16 @@ enum APIURLPolicy {
     static func validate(_ url: URL, environment: String) throws {
         guard let scheme = url.scheme?.lowercased(),
               ["http", "https"].contains(scheme),
-              let host = url.host, !host.isEmpty else {
+              let host = url.host, !host.isEmpty,
+              url.user == nil,
+              url.password == nil,
+              url.query == nil,
+              url.fragment == nil else {
             throw NetworkError.invalidURL
         }
-        if environment.lowercased() == "production" && scheme != "https" {
+        // Only explicit development builds may use HTTP for local/LAN testing.
+        // Unknown environments (including staging) must be HTTPS by default.
+        if environment.lowercased() != "development" && scheme != "https" {
             throw NetworkError.invalidURL
         }
     }
