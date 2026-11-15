@@ -6,7 +6,7 @@ Use this checklist for a TestFlight, App Store, or internal production release. 
 
 - [ ] Confirm the release commit is the reviewed commit and the working tree is clean.
 - [ ] Confirm the iOS and backend API contracts are compatible.
-- [ ] Confirm the release version and build number are intentional and incremented.
+- [ ] Confirm the production bundle identifier, signing team, release version and build number are intentional and incremented.
 - [ ] Build the Release configuration with the intended production API URL.
 - [ ] Confirm the production API URL uses HTTPS and has a valid certificate chain.
 - [ ] Confirm no local `.env`, credentials, tokens, signing assets, or developer-specific Xcode data are tracked.
