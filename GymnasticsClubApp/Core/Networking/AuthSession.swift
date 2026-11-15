@@ -36,6 +36,7 @@ final class AuthSession: ObservableObject {
     private let tokenReader: @MainActor () -> String?
     private let tokenWriter: @MainActor (String) throws -> Void
     private let tokenDeleter: @MainActor () -> Void
+    private var transitionGeneration: UInt64 = 0
 
     @Published private(set) var isAuthenticated: Bool
     @Published private(set) var isRestoring: Bool
@@ -62,9 +63,12 @@ final class AuthSession: ObservableObject {
     }
 
     func signIn(email: String, password: String) async -> Bool {
+        transitionGeneration &+= 1
+        let generation = transitionGeneration
         noticeMessage = nil
         do {
             let response = try await client.login(LoginRequest(email: email, password: password))
+            guard generation == transitionGeneration else { return false }
             try tokenWriter(response.token)
             user = response.user
             isAuthenticated = true
@@ -73,6 +77,7 @@ final class AuthSession: ObservableObject {
             noticeMessage = nil
             return true
         } catch {
+            guard generation == transitionGeneration else { return false }
             errorMessage = error.localizedDescription
             return false
         }
@@ -84,18 +89,29 @@ final class AuthSession: ObservableObject {
             return
         }
 
+        transitionGeneration &+= 1
+        let generation = transitionGeneration
+        let restoringToken = tokenReader()
         isRestoring = true
-        defer { isRestoring = false }
+        defer {
+            if generation == transitionGeneration {
+                isRestoring = false
+            }
+        }
 
         do {
-            user = try await client.get(.currentUser, as: AuthenticatedUser.self)
+            let restoredUser = try await client.get(.currentUser, as: AuthenticatedUser.self)
+            guard generation == transitionGeneration, tokenReader() == restoringToken else { return }
+            user = restoredUser
             errorMessage = nil
             noticeMessage = nil
         } catch let error as NetworkError where error.isAuthenticationFailure {
-            sessionExpired()
+            guard generation == transitionGeneration, tokenReader() == restoringToken else { return }
+            sessionExpired(ifCurrentTokenMatches: restoringToken)
         } catch is CancellationError {
             return
         } catch {
+            guard generation == transitionGeneration, tokenReader() == restoringToken else { return }
             // A timeout, offline device or 5xx response is not proof that the
             // token is invalid. Preserve the Keychain credential for retry.
             errorMessage = "The club server could not be reached. Your sign-in is saved; check the connection and retry."
@@ -115,6 +131,8 @@ final class AuthSession: ObservableObject {
     }
 
     func signOut() async {
+        transitionGeneration &+= 1
+        let generation = transitionGeneration
         var remoteRevocationUnconfirmed = false
         do {
             try await client.logout()
@@ -123,6 +141,9 @@ final class AuthSession: ObservableObject {
         } catch {
             remoteRevocationUnconfirmed = true
         }
+
+        // A sign-in started while revocation was in flight must win.
+        guard generation == transitionGeneration else { return }
 
         // Always remove the local credential, even when the device is offline.
         tokenDeleter()
@@ -140,6 +161,7 @@ final class AuthSession: ObservableObject {
            !SessionTokenPolicy.shouldExpire(requestToken: requestToken, currentToken: tokenReader()) {
             return
         }
+        transitionGeneration &+= 1
         tokenDeleter()
         isAuthenticated = false
         isRestoring = false
