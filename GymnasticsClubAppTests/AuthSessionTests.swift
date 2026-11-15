@@ -226,6 +226,7 @@ extension AuthSessionTests {
 
         XCTAssertEqual(store.token, "new-token")
         XCTAssertEqual(session.user?.email, "new@example.test")
+        XCTAssertFalse(session.isRestoring)
         XCTAssertTrue(session.isAuthenticated)
     }
 }
