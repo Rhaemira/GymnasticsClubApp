@@ -38,21 +38,12 @@ final class APIClientTransportTests: XCTestCase {
         return URLSession(configuration: configuration)
     }
 
-    private func response(url: URL, status: Int, body: String) -> (HTTPURLResponse, Data) {
-        let response = HTTPURLResponse(
-            url: url,
-            statusCode: status,
-            httpVersion: "HTTP/1.1",
-            headerFields: ["Content-Type": "application/json"]
-        )!
-        return (response, Data(body.utf8))
-    }
-
     func testAuthenticatedRequestUsesInjectedTokenProvider() async throws {
         var authorizationHeader: String?
         APIClientURLProtocolStub.handler = { request in
             authorizationHeader = request.value(forHTTPHeaderField: "Authorization")
-            return self.response(url: request.url!, status: 200, body: "[]")
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
+            return (response, Data("[]".utf8))
         }
 
         let client = APIClient(
@@ -71,7 +62,8 @@ final class APIClientTransportTests: XCTestCase {
     func testUnauthorizedResponseUsesInjectedSessionExpiryHandler() async {
         var expiredToken: String?
         APIClientURLProtocolStub.handler = { request in
-            return self.response(url: request.url!, status: 401, body: #"{"reason":"Expired"}"#)
+            let response = HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
+            return (response, Data(#"{"reason":"Expired"}"#.utf8))
         }
 
         let client = APIClient(
