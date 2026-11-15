@@ -30,7 +30,7 @@ private final class SessionStubClient: APIClientProtocol {
         currentUserCount += 1
         if let currentUserError { throw currentUserError }
         if shouldSuspendCurrentUser {
-            let delayedUser = try await withCheckedThrowingContinuation { continuation in
+            let delayedUser: AuthenticatedUser = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<AuthenticatedUser, Error>) in
                 currentUserContinuation = continuation
             }
             guard let typedUser = delayedUser as? T else { throw NetworkError.unknown }
