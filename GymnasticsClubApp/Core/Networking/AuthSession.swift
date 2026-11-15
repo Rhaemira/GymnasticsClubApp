@@ -91,7 +91,10 @@ final class AuthSession: ObservableObject {
 
         transitionGeneration &+= 1
         let generation = transitionGeneration
-        let restoringToken = tokenReader()
+        guard let restoringToken = tokenReader() else {
+            sessionExpired()
+            return
+        }
         isRestoring = true
         defer {
             if generation == transitionGeneration {
