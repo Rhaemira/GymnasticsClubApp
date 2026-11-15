@@ -120,7 +120,8 @@ The client integrates with the backend's authentication, athlete, coach, class, 
 - Keep API request/response models aligned with the backend contract.
 - Keep secrets and session tokens out of source control, logs, screenshots, and issue reports.
 - Prefer native SwiftUI behavior and shared components over parallel one-off implementations.
-- Cover networking and state transitions with deterministic tests.\n- Permit plain HTTP only for explicit development builds; staging and production must use HTTPS.
+- Cover networking and state transitions with deterministic tests.
+- Permit plain HTTP only for explicit development builds; staging and production must use HTTPS.
 - Preserve user data; do not use destructive migrations or unverified mock screenshots as release evidence.
 
 ## Contributing
