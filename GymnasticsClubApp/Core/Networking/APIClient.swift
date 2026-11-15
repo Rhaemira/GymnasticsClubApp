@@ -15,7 +15,7 @@ final class APIClient: APIClientProtocol {
         session: URLSession = .shared,
         tokenProvider: @escaping @MainActor () -> String? = { KeychainTokenStore.read() },
         unauthorizedHandler: @escaping @MainActor (String) async -> Void = { token in
-            await AuthSession.shared.sessionExpired(ifCurrentTokenMatches: token)
+            AuthSession.shared.sessionExpired(ifCurrentTokenMatches: token)
         }
     ) {
         let configured = baseURL ?? (Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String).flatMap(URL.init(string:))
