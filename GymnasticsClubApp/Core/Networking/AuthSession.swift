@@ -65,6 +65,7 @@ final class AuthSession: ObservableObject {
     func signIn(email: String, password: String) async -> Bool {
         transitionGeneration &+= 1
         let generation = transitionGeneration
+        isRestoring = false
         noticeMessage = nil
         do {
             let response = try await client.login(LoginRequest(email: email, password: password))
