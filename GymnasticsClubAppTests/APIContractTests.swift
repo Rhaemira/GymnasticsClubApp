@@ -45,6 +45,7 @@ final class APIContractTests: XCTestCase {
         XCTAssertNoThrow(try APIURLPolicy.validate(secureURL, environment: "production"))
         XCTAssertThrowsError(try APIURLPolicy.validate(localURL, environment: "production"))
         XCTAssertNoThrow(try APIURLPolicy.validate(localURL, environment: "development"))
+        XCTAssertThrowsError(try APIURLPolicy.validate(localURL, environment: "staging"))
     }
 
     func testAPIURLPolicyRejectsUnsupportedSchemesAndMissingHosts() throws {
@@ -53,6 +54,14 @@ final class APIContractTests: XCTestCase {
 
         XCTAssertThrowsError(try APIURLPolicy.validate(fileURL, environment: "development"))
         XCTAssertThrowsError(try APIURLPolicy.validate(hostlessURL, environment: "development"))
+    }
+
+    func testAPIURLPolicyRejectsEmbeddedCredentialsAndQueryParameters() throws {
+        let credentialedURL = try XCTUnwrap(URL(string: "https://user:password@api.example.test"))
+        let queryURL = try XCTUnwrap(URL(string: "https://api.example.test?token=secret"))
+
+        XCTAssertThrowsError(try APIURLPolicy.validate(credentialedURL, environment: "development"))
+        XCTAssertThrowsError(try APIURLPolicy.validate(queryURL, environment: "development"))
     }
 
     func testServerErrorsExposeStatusAndUsefulMessage() {
