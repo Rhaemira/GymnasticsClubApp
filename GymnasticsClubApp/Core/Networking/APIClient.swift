@@ -7,12 +7,23 @@ final class APIClient: APIClientProtocol {
     private let session: URLSession
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
+    private let tokenProvider: @MainActor () -> String?
+    private let unauthorizedHandler: @MainActor (String) async -> Void
 
-    init(baseURL: URL? = nil, session: URLSession = .shared) {
+    init(
+        baseURL: URL? = nil,
+        session: URLSession = .shared,
+        tokenProvider: @escaping @MainActor () -> String? = { KeychainTokenStore.read() },
+        unauthorizedHandler: @escaping @MainActor (String) async -> Void = { token in
+            await AuthSession.shared.sessionExpired(ifCurrentTokenMatches: token)
+        }
+    ) {
         let configured = baseURL ?? (Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String).flatMap(URL.init(string:))
             ?? URL(string: "http://127.0.0.1:8080")!
         self.baseURL = configured
         self.session = session
+        self.tokenProvider = tokenProvider
+        self.unauthorizedHandler = unauthorizedHandler
 
         self.encoder = Self.makeJSONEncoder()
         self.decoder = Self.makeJSONDecoder()
@@ -87,7 +98,7 @@ final class APIClient: APIClientProtocol {
                 let requestToken = String(authorization.dropFirst("Bearer ".count))
                 // A late 401 from an old request must not invalidate a newer
                 // session established after that request was sent.
-                await AuthSession.shared.sessionExpired(ifCurrentTokenMatches: requestToken)
+                await unauthorizedHandler(requestToken)
             }
             let serverMessage = try? decoder.decode(ServerErrorResponse.self, from: data).reason
             throw NetworkError.serverError(http.statusCode, serverMessage)
@@ -155,7 +166,7 @@ final class APIClient: APIClientProtocol {
         request.timeoutInterval = 30
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if authenticated {
-            guard let token = KeychainTokenStore.read() else { throw NetworkError.authenticationRequired }
+            guard let token = tokenProvider() else { throw NetworkError.authenticationRequired }
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         return request
