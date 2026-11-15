@@ -2,7 +2,8 @@ import XCTest
 @testable import GymnasticsClubApp
 
 private final class APIClientURLProtocolStub: URLProtocol {
-    static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    // Tests run serially; URLProtocol invokes its callback outside the main actor.
+    nonisolated(unsafe) static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
