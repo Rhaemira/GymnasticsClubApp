@@ -79,7 +79,7 @@ final class APIClientTransportTests: XCTestCase {
         } catch let error as NetworkError {
             XCTAssertTrue(error.isAuthenticationFailure)
         } catch {
-            XCTFail("Unexpected error: \\(error)")
+            XCTFail("Unexpected error: \(error)")
         }
 
         XCTAssertEqual(expiredToken, "expired-test-token")
