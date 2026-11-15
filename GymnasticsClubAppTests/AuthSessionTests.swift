@@ -7,6 +7,8 @@ private final class SessionStubClient: APIClientProtocol {
     var loginError: Error?
     var currentUser: AuthenticatedUser?
     var currentUserError: Error?
+    var shouldSuspendCurrentUser = false
+    var currentUserContinuation: CheckedContinuation<AuthenticatedUser, Error>?
     var logoutError: Error?
     private(set) var loginCount = 0
     private(set) var currentUserCount = 0
@@ -27,6 +29,13 @@ private final class SessionStubClient: APIClientProtocol {
     func get<T: Decodable>(_ endpoint: Endpoint, as type: T.Type) async throws -> T {
         currentUserCount += 1
         if let currentUserError { throw currentUserError }
+        if shouldSuspendCurrentUser {
+            let delayedUser = try await withCheckedThrowingContinuation { continuation in
+                currentUserContinuation = continuation
+            }
+            guard let typedUser = delayedUser as? T else { throw NetworkError.unknown }
+            return typedUser
+        }
         guard endpoint == .currentUser, let currentUser = currentUser as? T else {
             throw NetworkError.unknown
         }
@@ -186,5 +195,37 @@ final class AuthSessionTests: XCTestCase {
         XCTAssertTrue(session.isAuthenticated)
         XCTAssertEqual(store.token, "new-token")
         XCTAssertEqual(store.deleteCount, 0)
+    }
+}
+
+
+extension AuthSessionTests {
+    func testLateRestoreCannotOverwriteANewerSuccessfulSignIn() async {
+        let store = MemoryTokenStore()
+        store.token = "old-token"
+        let client = SessionStubClient()
+        client.shouldSuspendCurrentUser = true
+        client.loginResponse = LoginResponse(
+            token: "new-token",
+            expiresAt: Date().addingTimeInterval(3600),
+            user: AuthenticatedUser(id: UUID(), email: "new@example.test")
+        )
+        let session = makeSession(client: client, store: store)
+
+        let restoreTask = Task { await session.restore() }
+        while client.currentUserContinuation == nil {
+            await Task.yield()
+        }
+
+        let signedIn = await session.signIn(email: "new@example.test", password: "new-password")
+        XCTAssertTrue(signedIn)
+        client.currentUserContinuation?.resume(
+            returning: AuthenticatedUser(id: UUID(), email: "old@example.test")
+        )
+        await restoreTask.value
+
+        XCTAssertEqual(store.token, "new-token")
+        XCTAssertEqual(session.user?.email, "new@example.test")
+        XCTAssertTrue(session.isAuthenticated)
     }
 }
