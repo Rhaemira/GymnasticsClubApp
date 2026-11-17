@@ -1,30 +1,17 @@
-//
-//  Endpoint.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/10/26.
-//
-
 import Foundation
 
-enum Endpoint {
-
-    case athletes
-    case coaches
-    case classes
-    case attendance
-    case reports
-    case analytics
-
+enum Endpoint: Hashable {
+    case athletes, coaches, classes, attendance, reports, analytics, enrollments, currentUser
     var path: String {
         switch self {
-        case .athletes:    return "athletes"
-        case .coaches:     return "coaches"
-        case .classes:     return "classes"
-        case .attendance:  return "attendance"
-        case .reports:     return "reports"
-        case .analytics:   return "analytics"
+        case .athletes: return "athletes"
+        case .coaches: return "coaches"
+        case .classes: return "classes"
+        case .attendance: return "attendance"
+        case .reports: return "reports"
+        case .analytics: return "analytics"
+        case .enrollments: return "enrollments"
+        case .currentUser: return "auth/me"
         }
     }
-
 }

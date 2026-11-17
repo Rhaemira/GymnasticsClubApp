@@ -10,59 +10,97 @@ import Combine
 
 // MARK: - Coordinator
 
+@MainActor
 final class UndoToastCoordinator: ObservableObject {
+    @Published private(set) var label: String = ""
+    @Published private(set) var isVisible = false
+    @Published private(set) var progress: Double = 1.0
+    @Published private(set) var secondsLeft = 4
 
-    @Published var label: String = ""
-    @Published var isVisible: Bool = false
-    @Published var progress: Double = 1.0
-    @Published var secondsLeft: Int = 4
+    private struct PendingDeletion {
+        let id: UUID
+        let label: String
+        let action: () async -> Void
+    }
 
-    private let duration: Double = 4.0
-    private var action: (() async -> Void)?
+    private let duration: Double
+    private var queue: [PendingDeletion] = []
+    private var active: PendingDeletion?
+    private var isCommitting = false
     private var commitTask: Task<Void, Never>?
 
+    init(duration: Double = 4.0) {
+        self.duration = max(duration, 0.1)
+    }
+
+    /// Queues deletions instead of flushing the previous one. Every item gets
+    /// its own complete undo window before its server operation is committed.
     func schedule(label: String, action: @escaping () async -> Void) {
-        flush()
-
-        self.label       = label
-        self.action      = action
-        self.progress    = 1.0
-        self.secondsLeft = Int(duration)
-
-        withAnimation(.linear(duration: duration)) {
-            self.progress = 0.0
-        }
-
-        isVisible = true
-
-        commitTask = Task { [weak self] in
-            guard let self else { return }
-            for remaining in stride(from: Int(duration) - 1, through: 0, by: -1) {
-                try? await Task.sleep(for: .seconds(1))
-                guard !Task.isCancelled else { return }
-                await MainActor.run { self.secondsLeft = remaining }
-            }
-            guard !Task.isCancelled else { return }
-            await MainActor.run { self.flush() }
-        }
+        queue.append(PendingDeletion(id: UUID(), label: label, action: action))
+        guard active == nil, !isCommitting else { return }
+        presentNext()
     }
 
     func undo() {
+        guard active != nil else { return }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         commitTask?.cancel()
         commitTask = nil
-        action     = nil
+        active = nil
+        dismiss()
+        presentNext()
+    }
+
+    /// Cancels pending deletions when the authenticated workspace is left.
+    /// A deletion already being sent to the server cannot be rolled back here.
+    func cancelAll() {
+        queue.removeAll()
+        guard !isCommitting else { return }
+        commitTask?.cancel()
+        commitTask = nil
+        active = nil
+        progress = 1
+        secondsLeft = max(Int(ceil(duration)), 1)
         dismiss()
     }
 
-    private func flush() {
-        commitTask?.cancel()
-        commitTask = nil
-        let pending = action
-        action = nil
-        dismiss()
-        guard let pending else { return }
-        Task { await pending() }
+    private func presentNext() {
+        guard active == nil, !isCommitting, !queue.isEmpty else { return }
+        let pending = queue.removeFirst()
+        active = pending
+        label = pending.label
+        let countdownSteps = max(Int(ceil(duration)), 1)
+        let stepDuration = duration / Double(countdownSteps)
+        secondsLeft = countdownSteps
+        progress = 1
+        isVisible = true
+
+        withAnimation(.linear(duration: duration)) {
+            progress = 0
+        }
+
+        commitTask = Task { [weak self] in
+            for remaining in stride(from: countdownSteps - 1, through: 0, by: -1) {
+                do {
+                    try await Task.sleep(for: .seconds(stepDuration))
+                } catch {
+                    return
+                }
+
+                guard let self, self.active?.id == pending.id else { return }
+                self.secondsLeft = remaining
+            }
+
+            guard let self, self.active?.id == pending.id else { return }
+            self.commitTask = nil
+            self.active = nil
+            self.isCommitting = true
+            self.dismiss()
+
+            await pending.action()
+            self.isCommitting = false
+            self.presentNext()
+        }
     }
 
     private func dismiss() {
@@ -70,23 +108,18 @@ final class UndoToastCoordinator: ObservableObject {
             isVisible = false
         }
     }
-
 }
 
 // MARK: - View
 
 struct UndoToastView: View {
-
     @ObservedObject var coordinator: UndoToastCoordinator
 
     var body: some View {
         HStack(spacing: 14) {
-
-            // Countdown ring with digit inside
             ZStack {
                 Circle()
                     .stroke(.primary.opacity(0.1), lineWidth: 2.5)
-
                 Circle()
                     .trim(from: 0, to: coordinator.progress)
                     .stroke(
@@ -94,7 +127,6 @@ struct UndoToastView: View {
                         style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-
                 Text("\(coordinator.secondsLeft)")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .monospacedDigit()
@@ -111,7 +143,6 @@ struct UndoToastView: View {
 
             Spacer()
 
-            // Hairline separator
             Rectangle()
                 .fill(.primary.opacity(0.12))
                 .frame(width: 1, height: 20)
@@ -125,7 +156,7 @@ struct UndoToastView: View {
                     .foregroundStyle(.primary)
             }
             .buttonStyle(.plain)
-
+            .accessibilityHint("Cancels the pending deletion")
         }
         .padding(.leading, 14)
         .padding(.trailing, 18)
@@ -133,20 +164,17 @@ struct UndoToastView: View {
         .background(.regularMaterial)
         .clipShape(Capsule())
         .overlay {
-            Capsule()
-                .stroke(.primary.opacity(0.07), lineWidth: 1)
+            Capsule().stroke(.primary.opacity(0.07), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.12), radius: 20, y: 6)
         .padding(.horizontal, 24)
         .padding(.bottom, 104)
     }
-
 }
 
 // MARK: - Modifier
 
 extension View {
-
     func undoToast(_ coordinator: UndoToastCoordinator) -> some View {
         ZStack(alignment: .bottom) {
             self
@@ -155,7 +183,7 @@ extension View {
                     .transition(
                         .asymmetric(
                             insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9, anchor: .bottom)),
-                            removal:   .move(edge: .bottom).combined(with: .opacity)
+                            removal: .move(edge: .bottom).combined(with: .opacity)
                         )
                     )
                     .zIndex(99)
@@ -163,5 +191,4 @@ extension View {
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.75), value: coordinator.isVisible)
     }
-
 }

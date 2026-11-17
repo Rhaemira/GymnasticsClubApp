@@ -1,159 +1,55 @@
-//
-//  ClassRow.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/14/26.
-//
-
-
 import SwiftUI
 
 struct ClassRow: View {
-
     let gymClass: GymClass
 
-    @State
-    private var appeared = false
-
     var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "figure.flexibility")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(FeatureColors.classes.gradient)
+                .frame(width: 60, height: 60)
+                .background(FeatureColors.classes.opacity(0.16), in: Circle())
 
-        HStack(spacing: 18) {
-
-            ZStack {
-
-                Circle()
-                    .fill(
-                        FeatureColors.classes.opacity(0.18)
-                    )
-                    .frame(width: 64, height: 64)
-
-                Image(systemName: "figure.flexibility")
-                    .font(.system(size: 28))
-                    .foregroundStyle(
-                        FeatureColors.classes.gradient
-                    )
-
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-
+            VStack(alignment: .leading, spacing: 8) {
                 Text(gymClass.name)
-                    .font(
-                        .system(
-                            size: 21,
-                            weight: .bold,
-                            design: .rounded
-                        )
-                    )
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.primary)
 
-                HStack(spacing: 16) {
-
-                    Label(
-                        "\(gymClass.capacity) Athletes",
-                        systemImage: "person.2.fill"
-                    )
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                    Label(
-                        "\(gymClass.capacity)",
-                        systemImage: "person.2.fill"
-                    )
-                    .font(.subheadline)
-                    .foregroundStyle(FeatureColors.classes)
-
+                HStack(spacing: 14) {
+                    Label("Capacity \(gymClass.capacity)", systemImage: "person.2.fill")
+                    Label(gymClass.coach.fullName, systemImage: "person.fill")
                 }
-
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
             Image(systemName: "chevron.right")
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.tertiary)
-
         }
-
-        .padding(22)
-
+        .padding(18)
         .background(.ultraThinMaterial)
-
         .overlay {
-
-            RoundedRectangle(
-                cornerRadius: 24
-            )
-
-            .stroke(
-                FeatureColors.classes.opacity(0.15),
-                lineWidth: 1
-            )
-
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(FeatureColors.classes.opacity(0.14), lineWidth: 1)
         }
-
-        .clipShape(
-
-            RoundedRectangle(
-                cornerRadius: 24,
-                style: .continuous
-            )
-
-        )
-
-        .shadow(
-            color: .black.opacity(0.06),
-            radius: 12,
-            y: 6
-        )
-
-        .scaleEffect(
-            appeared ? 1 : 0.94
-        )
-
-        .opacity(
-            appeared ? 1 : 0
-        )
-
-        .animation(
-            .spring(
-                response: 0.55,
-                dampingFraction: 0.82
-            ),
-            value: appeared
-        )
-
-        .onAppear {
-
-            appeared = true
-
-        }
-
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
+        .accessibilityElement(children: .combine)
     }
-
 }
 
 #Preview {
-
     ClassRow(
-
         gymClass: GymClass(
-
             id: UUID(),
-
-            name: "Targaryen 101",
-
+            name: "Artistic Gymnastics",
             capacity: 20,
-
-            coach: CoachReference(
-
-                id: UUID(),
-
-                fullName: "Daenerys Targaryen"
-
-            )
-
+            coach: CoachReference(id: UUID(), fullName: "Coach Name")
         )
-
     )
-
 }

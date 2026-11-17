@@ -1,0 +1,60 @@
+name: iOS CI
+on:
+  push:
+    branches: [main, engineering/secure-integrated-overhaul]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Select Xcode
+        run: xcodebuild -version
+      - name: Build iOS Simulator app
+        run: |
+          xcodebuild \
+            -project GymnasticsClubApp.xcodeproj \
+            -scheme GymnasticsClubApp \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            API_BASE_URL=https://api.example.invalid \
+            build
+      - name: Static analysis
+        run: |
+          xcodebuild \
+            -project GymnasticsClubApp.xcodeproj \
+            -scheme GymnasticsClubApp \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            API_BASE_URL=https://api.example.invalid \
+            analyze
+      - name: Build Release configuration
+        run: |
+          xcodebuild \
+            -project GymnasticsClubApp.xcodeproj \
+            -scheme GymnasticsClubApp \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            API_BASE_URL=https://api.example.invalid \
+            build
+      - name: Run iOS unit tests
+        run: |
+          xcodebuild \
+            -project GymnasticsClubApp.xcodeproj \
+            -scheme GymnasticsClubApp \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            CODE_SIGNING_ALLOWED=NO \
+            API_BASE_URL=https://api.example.invalid \
+            -parallel-testing-enabled NO \
+            test

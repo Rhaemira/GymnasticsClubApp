@@ -1,70 +1,46 @@
-//
-//  DashboardView.swift
-//  GymnasticsClubApp
-//
-//  Created by Amirali Yazdani on 7/10/26.
-//
-
 import SwiftUI
 
 struct DashboardView: View {
-
-    @StateObject
-    private var viewModel = DashboardViewModel()
+    @Environment(\.isTabActive) private var isTabActive
+    @StateObject private var viewModel = DashboardViewModel()
 
     var body: some View {
-
-        ZStack {
-
-            AnimatedGradientBackground()
-
-            if viewModel.isLoading {
-
-                LoadingView()
-
-            } else if let error = viewModel.errorMessage {
-
-                ErrorView(message: error) {
-                    Task { await viewModel.loadDashboard() }
-                }
-
-            } else if let stats = viewModel.stats {
-
-                ScrollView {
-
-                    VStack(spacing: 28) {
-
-                        DashboardHeader()
-                            .dashboardAppear(delay: 0)
-
-                        DashboardContent(
-                            stats: stats,
-                            attendance: viewModel.attendance
-                        )
-
+        NavigationStack {
+            ZStack {
+                AnimatedGradientBackground()
+                if viewModel.isLoading {
+                    LoadingView()
+                } else if let error = viewModel.errorMessage {
+                    ErrorView(message: error) { Task { await viewModel.loadDashboard() } }
+                } else if let stats = viewModel.stats {
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            DashboardHeader()
+                            DashboardContent(stats: stats, attendance: viewModel.attendance)
+                        }
+                        .padding(.top)
                     }
-                    .padding(.top)
-
+                    .refreshable { await viewModel.loadDashboard() }
+                } else {
+                    ContentUnavailableView("No dashboard data", systemImage: "chart.bar", description: Text("Pull to refresh or try again."))
                 }
-                .refreshable {
-                    await viewModel.loadDashboard()
-                }
-
-            } else {
-
-                Text("stats == nil")
-
             }
-
+            .navigationTitle("Dashboard")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    NavigationLink { AnalyticsView() } label: {
+                        Image(systemName: "chart.xyaxis.line").accessibilityLabel("Analytics")
+                    }
+                    NavigationLink { SettingsView() } label: {
+                        Image(systemName: "gearshape").accessibilityLabel("Settings")
+                    }
+                }
+            }
+            .task(id: isTabActive) {
+                guard isTabActive else { return }
+                await viewModel.loadDashboard()
+            }
         }
-        .task {
-            await viewModel.loadDashboard()
-        }
-
     }
-
-}
-
-#Preview {
-    DashboardView()
 }

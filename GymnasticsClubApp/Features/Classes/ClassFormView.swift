@@ -17,7 +17,7 @@ struct ClassFormView: View {
 
     let coaches: [Coach]
 
-    let onSave: (String, Coach, Int) async -> Void
+    let onSave: (String, Coach, Int) async -> String?
 
     @Environment(\.dismiss)
     private var dismiss
@@ -29,10 +29,13 @@ struct ClassFormView: View {
     private var capacity = ""
 
     @State
-    private var selectedCoach: Coach?
+    private var selectedCoachID: UUID?
 
     @State
     private var saving = false
+
+    @State
+    private var validationMessage: String?
 
     var body: some View {
 
@@ -87,20 +90,21 @@ struct ClassFormView: View {
                     name = gymClass.name
                     capacity = "\(gymClass.capacity)"
 
-                    selectedCoach = coaches.first {
-
-                        $0.id == gymClass.coach.id
-
-                    }
+                    selectedCoachID = gymClass.coach.id
 
                 }
 
                 else {
 
-                    selectedCoach = coaches.first
+                    selectedCoachID = coaches.first?.id
 
                 }
 
+            }
+            .onChange(of: coaches.map(\.id)) { _, coachIDs in
+                guard !coachIDs.isEmpty else { return }
+                if let selectedCoachID, coachIDs.contains(selectedCoachID) { return }
+                selectedCoachID = coachIDs.first
             }
 
         }
@@ -187,36 +191,25 @@ struct ClassFormView: View {
 
                     .font(.headline)
 
-                Picker(
-                    "Coach",
-                    selection: $selectedCoach
-                ) {
-
-                    ForEach(coaches) { coach in
-
-                        Text(coach.fullName)
-
-                            .tag(Optional(coach))
-
+                if coaches.isEmpty {
+                    Text("No coaches available. Add a coach first.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Coach", selection: $selectedCoachID) {
+                        Text("Select Coach")
+                            .tag(nil as UUID?)
+                        ForEach(coaches) { coach in
+                            Text(coach.fullName)
+                                .tag(Optional(coach.id))
+                        }
                     }
-
+                    .pickerStyle(.menu)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
                 }
-
-                .pickerStyle(.menu)
-
-                .padding()
-
-                .frame(maxWidth: .infinity)
-
-                .background(.ultraThinMaterial)
-
-                .clipShape(
-
-                    RoundedRectangle(
-                        cornerRadius: 18
-                    )
-
-                )
 
             }
 
@@ -224,36 +217,42 @@ struct ClassFormView: View {
 
     }
 
+    @ViewBuilder
     private var saveButton: some View {
 
         Button {
 
-            guard
-
-                let coach = selectedCoach,
-
-                let cap = Int(capacity),
-
-                !name.isEmpty
-
-            else {
-
+            guard !saving else { return }
+            guard let selectedCoachID,
+                  let coach = coaches.first(where: { $0.id == selectedCoachID }) else {
+                validationMessage = "Choose an available coach for this class."
                 return
-
+            }
+            guard let cap = Int(capacity) else {
+                validationMessage = "Enter a class capacity between 1 and 500."
+                return
+            }
+            if let message = GymnasticsFormValidation.gymClass(
+                name: name,
+                capacity: cap,
+                hasCoach: true
+            ) {
+                validationMessage = message
+                return
             }
 
             Task {
 
                 saving = true
 
-                await onSave(
+                let saveError = await onSave(
                     name,
                     coach,
                     cap
                 )
 
-                dismiss()
-
+                saving = false
+                if let saveError { validationMessage = saveError } else { dismiss() }
             }
 
         } label: {
@@ -315,7 +314,7 @@ struct ClassFormView: View {
         }
 
         .disabled(saving)
-
+        if let validationMessage { Text(validationMessage).font(.footnote).foregroundStyle(.red) }
     }
 
 }
